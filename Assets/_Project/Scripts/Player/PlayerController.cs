@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace PulauKabut.Player
 {
@@ -33,6 +34,7 @@ namespace PulauKabut.Player
         private bool _jumpPressedThisFrame;
         private bool _jumpReleasedThisFrame;
         private bool _jumpHeld;
+        private bool _sprintHeld;
         private Vector3 _horizontalVelocity;
         private float _verticalVelocity;
         private Vector3 _groundNormal = Vector3.up;
@@ -54,6 +56,9 @@ namespace PulauKabut.Player
 
         /// <summary>True jika karakter sedang melayang (glide) di udara.</summary>
         public bool IsGliding { get; private set; }
+
+        /// <summary>True jika karakter sedang berlari cepat (Shift).</summary>
+        public bool IsSprinting => IsGrounded && _sprintHeld && _moveInput.sqrMagnitude > InputDeadzoneSqr;
 
         /// <summary>Besar kecepatan mendatar karakter saat ini (m/s), berguna untuk animasi.</summary>
         public float HorizontalSpeed => _horizontalVelocity.magnitude;
@@ -132,6 +137,7 @@ namespace PulauKabut.Player
                 _jumpPressedThisFrame = false;
                 _jumpReleasedThisFrame = false;
                 _jumpHeld = false;
+                _sprintHeld = false;
                 return;
             }
 
@@ -140,6 +146,7 @@ namespace PulauKabut.Player
             _jumpPressedThisFrame = _input.Player.Jump.WasPressedThisFrame();
             _jumpReleasedThisFrame = _input.Player.Jump.WasReleasedThisFrame();
             _jumpHeld = _input.Player.Jump.IsPressed();
+            _sprintHeld = Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed;
         }
 
         private void UpdateGrounded()
@@ -219,7 +226,8 @@ namespace PulauKabut.Player
 
             // Batasi panjang arah maksimal 1 agar gerak diagonal tidak lebih cepat dari gerak lurus
             Vector3 moveDirection = Vector3.ClampMagnitude(camForward * _moveInput.y + camRight * _moveInput.x, 1f);
-            float maxSpeed = IsGliding ? settings.GlideMoveSpeed : settings.MoveSpeed;
+            float groundSpeed = _sprintHeld ? settings.SprintSpeed : settings.MoveSpeed;
+            float maxSpeed = IsGliding ? settings.GlideMoveSpeed : groundSpeed;
             Vector3 targetVelocity = moveDirection * maxSpeed;
 
             // Pilih waktu percepatan saat ada input (atau saat glide), dan perlambatan saat tombol dilepas

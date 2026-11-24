@@ -117,9 +117,10 @@ namespace PulauKabut.Player
 
                 _hintBuilder.Clear();
                 _hintBuilder.Append("KONTROL [H sembunyi]\n");
-                _hintBuilder.Append("[WASD]   Jalan / Lari\n");
+                _hintBuilder.Append("[WASD]   Jalan  |  [Shift] Sprint\n");
                 _hintBuilder.Append("[Mouse]  Arahkan Kamera\n");
                 _hintBuilder.Append("[Spasi]  Lompat (Tahan di udara = Glide)\n");
+                _hintBuilder.Append("[E]      Interaksi / Bicara NPC\n");
                 _hintBuilder.Append("[F]      Lentera : ").Append(lanternStatus).Append('\n');
                 _hintBuilder.Append("[V]      Kamera  : ").Append(povStatus).Append('\n');
                 _hintBuilder.Append("[Esc]    Jeda / Lanjut");
@@ -139,8 +140,8 @@ namespace PulauKabut.Player
 
             if (showControlHints && !string.IsNullOrEmpty(_cachedHintText))
             {
-                const float hintWidth = 315f;
-                const float hintHeight = 148f;
+                const float hintWidth = 320f;
+                const float hintHeight = 166f;
                 Rect hintRect = new Rect(12f, Screen.height - hintHeight - 12f, hintWidth, hintHeight);
                 GUI.Box(hintRect, _cachedHintText, _boxStyle);
             }

@@ -9,9 +9,13 @@ namespace PulauKabut.Player
     public class PlayerMovementSettings : ScriptableObject
     {
         [Header("Gerak")]
-        [Tooltip("Kecepatan lari maksimum pemain dalam meter per detik.")]
+        [Tooltip("Kecepatan jalan normal pemain dalam meter per detik.")]
         [Min(0.1f)]
         [SerializeField] private float moveSpeed = 5f;
+
+        [Tooltip("Kecepatan lari cepat (Sprint) saat menahan tombol Shift (m/s).")]
+        [Min(0.1f)]
+        [SerializeField] private float sprintSpeed = 7.8f;
 
         [Tooltip("Waktu yang dibutuhkan dari diam hingga kecepatan penuh (detik).")]
         [Min(0.01f)]
@@ -117,6 +121,7 @@ namespace PulauKabut.Player
 
         // Properti baca-saja agar nilai aset tidak berubah tidak sengaja saat Play Mode
         public float MoveSpeed => moveSpeed;
+        public float SprintSpeed => sprintSpeed;
         public float AccelerationTime => accelerationTime;
         public float DecelerationTime => decelerationTime;
         public float RotationSpeed => rotationSpeed;
