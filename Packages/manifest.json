@@ -1,10 +1,16 @@
 {
   "dependencies": {
+    "com.coplaydev.unity-mcp": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#main",
+    "com.unity.cinemachine": "3.1.7",
     "com.unity.collab-proxy": "2.14.0",
     "com.unity.ide.rider": "3.1.0",
     "com.unity.ide.visualstudio": "2.0.28",
     "com.unity.inputsystem": "1.20.1",
+    "com.unity.pipeline": "1.0.1",
+    "com.unity.remote-config": "4.3.0",
     "com.unity.render-pipelines.universal": "17.6.0",
+    "com.unity.services.authentication": "3.9.0",
+    "com.unity.services.cloudsave": "3.4.2",
     "com.unity.ugui": "2.6.0",
     "com.unity.modules.accessibility": "1.0.0",
     "com.unity.modules.adaptiveperformance": "1.0.0",
@@ -41,11 +47,6 @@
     "com.unity.modules.vehicles": "1.0.0",
     "com.unity.modules.video": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
-    "com.unity.modules.xr": "1.0.0",
-    "com.unity.pipeline": "1.0.1",
-    "com.unity.cinemachine": "3.1.7",
-    "com.unity.services.authentication": "3.9.0",
-    "com.unity.remote-config": "4.3.0",
-    "com.unity.services.cloudsave": "3.4.2"
+    "com.unity.modules.xr": "1.0.0"
   }
 }
