@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77cd2faf9e6456147b0f9b12b19af60e, type: 3}
+  m_Name: LanternSettings_Default
+  m_EditorClassIdentifier: Assembly-CSharp::PulauKabut.Lantern.LanternSettings
+  revealRadius: 12
+  lightIntensity: 5
+  lightRange: 16
+  lightColor: {r: 1, g: 0.81, b: 0.44, a: 1}
+  fadeSpeed: 8
+  startLit: 0
+  controlSceneFog: 1
+  unlitFogStart: 16
+  unlitFogEnd: 85
+  litFogStart: 55
+  litFogEnd: 220
+  fogTransitionSpeed: 3.5

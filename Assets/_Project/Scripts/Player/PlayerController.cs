@@ -32,6 +32,7 @@ namespace PulauKabut.Player
         private Vector2 _moveInput;
         private bool _jumpPressedThisFrame;
         private bool _jumpReleasedThisFrame;
+        private bool _jumpHeld;
         private Vector3 _horizontalVelocity;
         private float _verticalVelocity;
         private Vector3 _groundNormal = Vector3.up;
@@ -50,6 +51,9 @@ namespace PulauKabut.Player
 
         /// <summary>True jika karakter sedang naik di udara (lompat).</summary>
         public bool IsJumping => !IsGrounded && _verticalVelocity > 0f;
+
+        /// <summary>True jika karakter sedang melayang (glide) di udara.</summary>
+        public bool IsGliding { get; private set; }
 
         /// <summary>Besar kecepatan mendatar karakter saat ini (m/s), berguna untuk animasi.</summary>
         public float HorizontalSpeed => _horizontalVelocity.magnitude;
@@ -127,6 +131,7 @@ namespace PulauKabut.Player
                 _moveInput = Vector2.zero;
                 _jumpPressedThisFrame = false;
                 _jumpReleasedThisFrame = false;
+                _jumpHeld = false;
                 return;
             }
 
@@ -134,6 +139,7 @@ namespace PulauKabut.Player
             _moveInput = _input.Player.Move.ReadValue<Vector2>();
             _jumpPressedThisFrame = _input.Player.Jump.WasPressedThisFrame();
             _jumpReleasedThisFrame = _input.Player.Jump.WasReleasedThisFrame();
+            _jumpHeld = _input.Player.Jump.IsPressed();
         }
 
         private void UpdateGrounded()
@@ -213,11 +219,15 @@ namespace PulauKabut.Player
 
             // Batasi panjang arah maksimal 1 agar gerak diagonal tidak lebih cepat dari gerak lurus
             Vector3 moveDirection = Vector3.ClampMagnitude(camForward * _moveInput.y + camRight * _moveInput.x, 1f);
-            Vector3 targetVelocity = moveDirection * settings.MoveSpeed;
+            float maxSpeed = IsGliding ? settings.GlideMoveSpeed : settings.MoveSpeed;
+            Vector3 targetVelocity = moveDirection * maxSpeed;
 
-            // Pilih waktu percepatan saat ada input, atau waktu perlambatan saat tombol dilepas
-            float smoothTime = Mathf.Max(hasInput ? settings.AccelerationTime : settings.DecelerationTime, MinSmoothTime);
-            float changeRate = settings.MoveSpeed / smoothTime;
+            // Pilih waktu percepatan saat ada input (atau saat glide), dan perlambatan saat tombol dilepas
+            float baseTime = IsGliding
+                ? settings.GlideAccelerationTime
+                : (hasInput ? settings.AccelerationTime : settings.DecelerationTime);
+            float smoothTime = Mathf.Max(baseTime, MinSmoothTime);
+            float changeRate = maxSpeed / smoothTime;
 
             _horizontalVelocity = Vector3.MoveTowards(_horizontalVelocity, targetVelocity, changeRate * dt);
         }
@@ -255,6 +265,7 @@ namespace PulauKabut.Player
                 _jumpBufferTimer = 0f;
                 _coyoteTimer = 0f;
                 IsGrounded = false;
+                IsGliding = false;
                 return;
             }
 
@@ -268,10 +279,21 @@ namespace PulauKabut.Player
             {
                 // Gaya tekan kecil agar karakter menempel stabil saat menuruni lereng
                 _verticalVelocity = settings.GroundedStickForce;
+                IsGliding = false;
             }
             else
             {
-                _verticalVelocity += settings.Gravity * dt;
+                // Aktifkan glide jika tombol lompat ditahan saat sedang jatuh di udara
+                IsGliding = settings.EnableGlide && !IsGrounded && _jumpHeld && _verticalVelocity < 0f;
+
+                if (IsGliding)
+                {
+                    _verticalVelocity = Mathf.MoveTowards(_verticalVelocity, settings.GlideFallSpeed, Mathf.Abs(settings.Gravity) * dt);
+                }
+                else
+                {
+                    _verticalVelocity += settings.Gravity * dt;
+                }
             }
 
             _verticalVelocity = Mathf.Max(_verticalVelocity, settings.MaxFallSpeed);
