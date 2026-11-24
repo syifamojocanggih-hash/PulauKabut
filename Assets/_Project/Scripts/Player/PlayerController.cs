@@ -29,12 +29,19 @@ namespace PulauKabut.Player
         private CharacterController _controller;
         private PlayerInputActions _input;
         private Vector2 _moveInput;
+        private bool _jumpPressedThisFrame;
+        private bool _jumpReleasedThisFrame;
         private Vector3 _horizontalVelocity;
         private float _verticalVelocity;
         private Vector3 _groundNormal = Vector3.up;
+        private float _coyoteTimer;
+        private float _jumpBufferTimer;
 
         /// <summary>True jika karakter sedang berdiri di atas permukaan yang valid.</summary>
         public bool IsGrounded { get; private set; }
+
+        /// <summary>True jika karakter sedang naik di udara (lompat).</summary>
+        public bool IsJumping => !IsGrounded && _verticalVelocity > 0f;
 
         /// <summary>Besar kecepatan mendatar karakter saat ini (m/s), berguna untuk animasi.</summary>
         public float HorizontalSpeed => _horizontalVelocity.magnitude;
@@ -91,6 +98,7 @@ namespace PulauKabut.Player
 
             ReadInput();
             UpdateGrounded();
+            UpdateJumpTimers(dt);
             UpdateHorizontalVelocity(dt);
             UpdateVerticalVelocity(dt);
             ApplyMovement(dt);
@@ -99,8 +107,10 @@ namespace PulauKabut.Player
 
         private void ReadInput()
         {
-            // Baca nilai Move langsung tanpa callback dan tanpa alokasi memori
+            // Baca input langsung setiap frame tanpa callback dan tanpa alokasi memori
             _moveInput = _input.Player.Move.ReadValue<Vector2>();
+            _jumpPressedThisFrame = _input.Player.Jump.WasPressedThisFrame();
+            _jumpReleasedThisFrame = _input.Player.Jump.WasReleasedThisFrame();
         }
 
         private void UpdateGrounded()
@@ -168,8 +178,48 @@ namespace PulauKabut.Player
             _horizontalVelocity = Vector3.MoveTowards(_horizontalVelocity, targetVelocity, changeRate * dt);
         }
 
+        private void UpdateJumpTimers(float dt)
+        {
+            // Isi ulang coyote time saat menapak tanah dan tidak sedang naik
+            if (IsGrounded && _verticalVelocity <= 0f)
+            {
+                _coyoteTimer = settings.CoyoteTime;
+            }
+            else if (_coyoteTimer > 0f)
+            {
+                _coyoteTimer -= dt;
+            }
+
+            // Catat input lompat ke buffer agar tombol yang ditekan sesaat sebelum mendarat tetap terhitung
+            if (_jumpPressedThisFrame)
+            {
+                _jumpBufferTimer = settings.JumpBufferTime;
+            }
+            else if (_jumpBufferTimer > 0f)
+            {
+                _jumpBufferTimer -= dt;
+            }
+        }
+
         private void UpdateVerticalVelocity(float dt)
         {
+            // Eksekusi lompat jika buffer aktif dan masih dalam coyote time
+            if (_jumpBufferTimer > 0f && _coyoteTimer > 0f)
+            {
+                // Rumus kinematika v = sqrt(-2 * g * h) agar tinggi lompat sesuai JumpHeight
+                _verticalVelocity = Mathf.Sqrt(-2f * settings.Gravity * settings.JumpHeight);
+                _jumpBufferTimer = 0f;
+                _coyoteTimer = 0f;
+                IsGrounded = false;
+                return;
+            }
+
+            // Potong kecepatan naik jika tombol lompat dilepas lebih awal (tinggi lompat variabel)
+            if (_jumpReleasedThisFrame && _verticalVelocity > 0f)
+            {
+                _verticalVelocity *= settings.JumpCutMultiplier;
+            }
+
             if (IsGrounded && _verticalVelocity < 0f)
             {
                 // Gaya tekan kecil agar karakter menempel stabil saat menuruni lereng
