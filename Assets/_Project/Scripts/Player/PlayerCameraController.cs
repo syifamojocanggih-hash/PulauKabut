@@ -1,22 +1,34 @@
+using Unity.Cinemachine;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace PulauKabut.Player
 {
     /// <summary>
-    /// Mengendalikan rotasi titik mata (POV 1 First-Person), penguncian kursor,
-    /// serta menyembunyikan/menampilkan Visuals karakter otomatis saat kamera berpindah antara POV 1 dan POV 2.
+    /// Mengendalikan kamera manual pemain (toggle V antara Third-Person di belakang karakter
+    /// dan First-Person dari mata karakter), penguncian kursor, serta visibilitas Visuals otomatis.
     /// </summary>
     public class PlayerCameraController : MonoBehaviour
     {
+        private const int ActiveManualPriority = 11;
+        private const int InactiveManualPriority = 10;
+
         [Header("Referensi")]
-        [Tooltip("Aset pengaturan pemain yang menyimpan sensitivitas, damping, dan batas sudut kamera.")]
+        [Tooltip("Aset pengaturan pemain yang menyimpan sensitivitas, damping, jarak, dan batas sudut kamera.")]
         [SerializeField] private PlayerMovementSettings settings;
 
-        [Tooltip("Titik mata karakter (CameraTarget) yang diikuti oleh Cinemachine POV 1.")]
+        [Tooltip("Titik pivot mata/bahu karakter (CameraTarget) yang diikuti kamera Third-Person dan First-Person.")]
         [SerializeField] private Transform cameraTarget;
 
-        [Tooltip("Objek Visuals karakter. Otomatis disembunyikan saat POV 1 dekat mata dan tampil penuh saat POV 2 aktif.")]
+        [Tooltip("Objek Visuals karakter. Otomatis disembunyikan saat kamera tepat di mata (First-Person) dan tampil penuh saat Third-Person/Plot.")]
         [SerializeField] private GameObject visualsRoot;
+
+        [Header("Kamera Manual (Cinemachine 3)")]
+        [Tooltip("Kamera Third-Person di belakang karakter.")]
+        [SerializeField] private CinemachineCamera thirdPersonCamera;
+
+        [Tooltip("Kamera First-Person dari pandangan mata karakter.")]
+        [SerializeField] private CinemachineCamera firstPersonCamera;
 
         [Header("Kursor")]
         [Tooltip("Kunci dan sembunyikan kursor otomatis saat mulai bermain.")]
@@ -24,15 +36,23 @@ namespace PulauKabut.Player
 
         private PlayerInputActions _input;
         private Transform _mainCameraTransform;
+        private CinemachineThirdPersonFollow _thirdPersonFollow;
         private float _targetYaw;
         private float _targetPitch;
         private float _currentYaw;
         private float _currentPitch;
         private bool _isCursorLocked;
         private bool _isVisualsVisible = true;
+        private bool _isFirstPerson;
 
         /// <summary>True jika kursor sedang terkunci untuk kontrol kamera.</summary>
         public bool IsCursorLocked => _isCursorLocked;
+
+        /// <summary>True jika pemain sedang memilih mode First-Person (pandangan mata).</summary>
+        public bool IsFirstPerson => _isFirstPerson;
+
+        /// <summary>True jika kamera aktif saat ini bukan First-Person (Third-Person atau POV 2 Plot).</summary>
+        public bool IsInContextPov => !_isFirstPerson && _isVisualsVisible;
 
         private void Awake()
         {
@@ -45,6 +65,11 @@ namespace PulauKabut.Player
 
             _input = new PlayerInputActions();
 
+            if (thirdPersonCamera != null)
+            {
+                _thirdPersonFollow = thirdPersonCamera.GetComponent<CinemachineThirdPersonFollow>();
+            }
+
             // Ambil sudut awal dari CameraTarget agar tidak melompat saat mulai bermain
             Vector3 initialEuler = cameraTarget.eulerAngles;
             _targetYaw = initialEuler.y;
@@ -53,6 +78,9 @@ namespace PulauKabut.Player
             float normalizedPitch = initialEuler.x > 180f ? initialEuler.x - 360f : initialEuler.x;
             _targetPitch = Mathf.Clamp(normalizedPitch, settings.MinPitch, settings.MaxPitch);
             _currentPitch = _targetPitch;
+
+            _isFirstPerson = settings.StartInFirstPerson;
+            ApplyManualCameraMode();
         }
 
         private void Start()
@@ -86,12 +114,24 @@ namespace PulauKabut.Player
         private void Update()
         {
             // Jangan memutar kamera jika game dijeda atau kursor sedang bebas
-            if (Time.timeScale <= 0f || !_isCursorLocked)
+            if (Time.timeScale <= 0f || Cursor.lockState != CursorLockMode.Locked)
             {
                 return;
             }
 
-            // Baca input Look langsung tanpa alokasi memori
+            // Toggle manual antara Third-Person (belakang karakter) dan First-Person (mata karakter) dengan tombol V
+            if (Keyboard.current != null && Keyboard.current.vKey.wasPressedThisFrame)
+            {
+                ToggleManualPov();
+            }
+
+            // Terapkan jarak Third-Person secara live dari ScriptableObject
+            if (_thirdPersonFollow != null)
+            {
+                _thirdPersonFollow.CameraDistance = settings.ThirdPersonDistance;
+            }
+
+            // Baca input Look langsung tanpa alokasi memori (berlaku untuk Third-Person maupun First-Person)
             Vector2 lookInput = _input.Player.Look.ReadValue<Vector2>();
             float sensitivity = settings.LookSensitivity;
 
@@ -120,14 +160,34 @@ namespace PulauKabut.Player
             UpdateVisualsVisibility();
         }
 
-        /// <summary>
-        /// Mengunci atau membebaskan kursor (juga dipanggil oleh GameManager saat jeda/resume).
-        /// </summary>
+        /// <summary>Berpindah antara kamera belakang karakter (Third-Person) dan pandangan mata (First-Person).</summary>
+        public void ToggleManualPov()
+        {
+            _isFirstPerson = !_isFirstPerson;
+            ApplyManualCameraMode();
+        }
+
+        /// <summary>Mengunci atau membebaskan kursor (juga dipanggil oleh GameManager saat jeda/resume).</summary>
         public void SetCursorLocked(bool locked)
         {
             _isCursorLocked = locked;
             Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
             Cursor.visible = !locked;
+        }
+
+        private void ApplyManualCameraMode()
+        {
+            if (firstPersonCamera != null)
+            {
+                firstPersonCamera.Priority.Enabled = true;
+                firstPersonCamera.Priority.Value = _isFirstPerson ? ActiveManualPriority : InactiveManualPriority;
+            }
+
+            if (thirdPersonCamera != null)
+            {
+                thirdPersonCamera.Priority.Enabled = true;
+                thirdPersonCamera.Priority.Value = _isFirstPerson ? InactiveManualPriority : ActiveManualPriority;
+            }
         }
 
         private void UpdateVisualsVisibility()
@@ -137,7 +197,7 @@ namespace PulauKabut.Player
                 return;
             }
 
-            // Sembunyikan tubuh karakter hanya saat lensa kamera berada tepat di kepala (POV 1)
+            // Sembunyikan tubuh karakter hanya saat lensa kamera berada tepat di kepala (First-Person)
             float hideDistSqr = settings.FirstPersonHideDistance * settings.FirstPersonHideDistance;
             float currentDistSqr = (_mainCameraTransform.position - cameraTarget.position).sqrMagnitude;
             bool shouldShowVisuals = currentDistSqr >= hideDistSqr;

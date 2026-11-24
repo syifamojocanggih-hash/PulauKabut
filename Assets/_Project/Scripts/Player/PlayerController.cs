@@ -27,6 +27,7 @@ namespace PulauKabut.Player
         [SerializeField] private Transform cameraTransform;
 
         private CharacterController _controller;
+        private PlayerCameraController _cameraController;
         private PlayerInputActions _input;
         private Vector2 _moveInput;
         private bool _jumpPressedThisFrame;
@@ -36,9 +37,16 @@ namespace PulauKabut.Player
         private Vector3 _groundNormal = Vector3.up;
         private float _coyoteTimer;
         private float _jumpBufferTimer;
+        private bool _lastInContextPov;
+        private bool _lockMoveBasisUntilRelease;
+        private Vector3 _lockedCamForward = Vector3.forward;
+        private Vector3 _lockedCamRight = Vector3.right;
 
         /// <summary>True jika karakter sedang berdiri di atas permukaan yang valid.</summary>
         public bool IsGrounded { get; private set; }
+
+        /// <summary>Jika true, input gerak sementara ditahan (misal saat momen alur kamera POV 2 berlangsung).</summary>
+        public bool InputLocked { get; set; }
 
         /// <summary>True jika karakter sedang naik di udara (lompat).</summary>
         public bool IsJumping => !IsGrounded && _verticalVelocity > 0f;
@@ -52,6 +60,7 @@ namespace PulauKabut.Player
         private void Awake()
         {
             _controller = GetComponent<CharacterController>();
+            _cameraController = GetComponent<PlayerCameraController>();
 
             // Hentikan komponen jika aset settings belum dipasang di Inspector
             if (settings == null)
@@ -94,6 +103,12 @@ namespace PulauKabut.Player
 
         private void Update()
         {
+            // Jangan proses input atau gerak saat permainan sedang dijeda
+            if (Time.timeScale <= 0f)
+            {
+                return;
+            }
+
             float dt = Time.deltaTime;
 
             ReadInput();
@@ -107,6 +122,14 @@ namespace PulauKabut.Player
 
         private void ReadInput()
         {
+            if (InputLocked)
+            {
+                _moveInput = Vector2.zero;
+                _jumpPressedThisFrame = false;
+                _jumpReleasedThisFrame = false;
+                return;
+            }
+
             // Baca input langsung setiap frame tanpa callback dan tanpa alokasi memori
             _moveInput = _input.Player.Move.ReadValue<Vector2>();
             _jumpPressedThisFrame = _input.Player.Jump.WasPressedThisFrame();
@@ -145,11 +168,30 @@ namespace PulauKabut.Player
 
         private void UpdateHorizontalVelocity(float dt)
         {
-            // Ambil arah depan dan kanan kamera pada bidang datar (Y = 0)
-            Vector3 camForward = Vector3.forward;
-            Vector3 camRight = Vector3.right;
+            bool hasInput = _moveInput.sqrMagnitude > InputDeadzoneSqr;
+            bool inContextPov = _cameraController != null && _cameraController.IsInContextPov;
 
-            if (cameraTransform != null)
+            // Jika POV berubah saat tombol gerak sedang ditahan, kunci arah acuan kamera sementara
+            // sampai tombol dilepas agar karakter tidak mendadak berbelok/bolak-balik di batas zona
+            if (inContextPov != _lastInContextPov)
+            {
+                if (hasInput)
+                {
+                    _lockMoveBasisUntilRelease = true;
+                }
+                _lastInContextPov = inContextPov;
+            }
+
+            if (!hasInput)
+            {
+                _lockMoveBasisUntilRelease = false;
+            }
+
+            Vector3 camForward = _lockedCamForward;
+            Vector3 camRight = _lockedCamRight;
+
+            // Perbarui arah acuan dari kamera aktif jika tidak sedang dikunci saat transisi POV
+            if (!_lockMoveBasisUntilRelease && cameraTransform != null)
             {
                 camForward = cameraTransform.forward;
                 camForward.y = 0f;
@@ -164,6 +206,9 @@ namespace PulauKabut.Player
                 {
                     camRight.Normalize();
                 }
+
+                _lockedCamForward = camForward;
+                _lockedCamRight = camRight;
             }
 
             // Batasi panjang arah maksimal 1 agar gerak diagonal tidak lebih cepat dari gerak lurus
@@ -171,7 +216,6 @@ namespace PulauKabut.Player
             Vector3 targetVelocity = moveDirection * settings.MoveSpeed;
 
             // Pilih waktu percepatan saat ada input, atau waktu perlambatan saat tombol dilepas
-            bool hasInput = _moveInput.sqrMagnitude > InputDeadzoneSqr;
             float smoothTime = Mathf.Max(hasInput ? settings.AccelerationTime : settings.DecelerationTime, MinSmoothTime);
             float changeRate = settings.MoveSpeed / smoothTime;
 

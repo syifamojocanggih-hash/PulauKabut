@@ -93,6 +93,13 @@ namespace PulauKabut.Player
         [Min(0.1f)]
         [SerializeField] private float firstPersonHideDistance = 0.65f;
 
+        [Tooltip("Jarak kamera di belakang karakter saat mode Third-Person (meter).")]
+        [Range(2f, 10f)]
+        [SerializeField] private float thirdPersonDistance = 5f;
+
+        [Tooltip("Jika dicentang, game dimulai dari pandangan mata (First-Person). Jika tidak, mulai dari belakang karakter (Third-Person). Tekan V untuk berganti.")]
+        [SerializeField] private bool startInFirstPerson = false;
+
         // Properti baca-saja agar nilai aset tidak berubah tidak sengaja saat Play Mode
         public float MoveSpeed => moveSpeed;
         public float AccelerationTime => accelerationTime;
@@ -115,5 +122,7 @@ namespace PulauKabut.Player
         public float MaxPitch => maxPitch;
         public bool InvertY => invertY;
         public float FirstPersonHideDistance => firstPersonHideDistance;
+        public float ThirdPersonDistance => thirdPersonDistance;
+        public bool StartInFirstPerson => startInFirstPerson;
     }
 }
