@@ -1,29 +1,39 @@
 using System.Text;
 using PulauKabut.Core;
+using PulauKabut.Lantern;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace PulauKabut.Player
 {
     /// <summary>
-    /// Overlay debug ringan di pojok kiri atas untuk memantau FPS, status di tanah,
-    /// kecepatan pemain, dan status jeda. Bisa dinyalakan/dimatikan lewat Inspector atau tombol F3.
+    /// Overlay debug ringan (pojok kiri atas, toggle F3) dan petunjuk kontrol (pojok kiri bawah, toggle H)
+    /// untuk memantau FPS, status gerak/glide, status lentera, POV kamera, serta tombol kontrol.
     /// </summary>
     public class PlayerDebugOverlay : MonoBehaviour
     {
         private const float RefreshInterval = 0.2f;
 
-        [Header("Pengaturan Debug")]
-        [Tooltip("Tampilkan overlay debug saat Play Mode. Tekan F3 untuk menyalakan/mematikan.")]
+        [Header("Pengaturan Tampilan")]
+        [Tooltip("Tampilkan panel debug FPS & status di pojok kiri atas. Tekan F3 untuk toggle.")]
         [SerializeField] private bool showOverlay = true;
 
-        [Tooltip("Referensi PlayerController (jika kosong, otomatis diambil dari objek ini).")]
-        [SerializeField] private PlayerController playerController;
+        [Tooltip("Tampilkan petunjuk tombol kontrol di pojok kiri bawah. Tekan H untuk toggle.")]
+        [SerializeField] private bool showControlHints = true;
 
-        private readonly StringBuilder _builder = new StringBuilder(160);
-        private string _cachedDisplayText = string.Empty;
+        [Header("Referensi (Opsional)")]
+        [SerializeField] private PlayerController playerController;
+        [SerializeField] private PlayerCameraController cameraController;
+        [SerializeField] private LanternController lanternController;
+
+        private readonly StringBuilder _debugBuilder = new StringBuilder(180);
+        private readonly StringBuilder _hintBuilder = new StringBuilder(240);
+        private string _cachedDebugText = string.Empty;
+        private string _cachedHintText = string.Empty;
+
         private GUIStyle _boxStyle;
-        private Rect _panelRect = new Rect(12f, 12f, 250f, 108f);
+        private GUIStyle _pauseStyle;
+        private Rect _debugRect = new Rect(12f, 12f, 255f, 124f);
 
         private int _frameCount;
         private float _elapsedTime;
@@ -31,26 +41,37 @@ namespace PulauKabut.Player
 
         private void Awake()
         {
-            if (playerController == null)
-            {
-                playerController = GetComponent<PlayerController>();
-            }
+            if (playerController == null) playerController = GetComponent<PlayerController>();
+            if (cameraController == null) cameraController = GetComponent<PlayerCameraController>();
+            if (lanternController == null) lanternController = GetComponent<LanternController>();
+        }
+
+        private void Start()
+        {
+            RebuildTexts();
         }
 
         private void Update()
         {
-            // Toggle tampilan debug menggunakan tombol F3 (Input System, tanpa alokasi memori)
-            if (Keyboard.current != null && Keyboard.current.f3Key.wasPressedThisFrame)
+            if (Keyboard.current != null)
             {
-                showOverlay = !showOverlay;
+                if (Keyboard.current.f3Key.wasPressedThisFrame)
+                {
+                    showOverlay = !showOverlay;
+                }
+
+                if (Keyboard.current.hKey.wasPressedThisFrame)
+                {
+                    showControlHints = !showControlHints;
+                }
             }
 
-            if (!showOverlay)
+            if (!showOverlay && !showControlHints)
             {
                 return;
             }
 
-            // Hitung rata-rata FPS dalam interval singkat agar stabil terbaca dan minim alokasi string
+            // Hitung FPS dalam interval singkat agar angka stabil & hemat alokasi string
             _frameCount++;
             _elapsedTime += Time.unscaledDeltaTime;
 
@@ -59,42 +80,82 @@ namespace PulauKabut.Player
                 _currentFps = _frameCount / _elapsedTime;
                 _frameCount = 0;
                 _elapsedTime = 0f;
-                RebuildDisplayText();
+                RebuildTexts();
             }
         }
 
-        private void RebuildDisplayText()
+        private void RebuildTexts()
         {
-            _builder.Clear();
-            _builder.Append("Pulau Kabut Debug [F3]\n");
-            _builder.Append("FPS      : ").Append(Mathf.RoundToInt(_currentFps)).Append('\n');
-
-            if (playerController != null)
+            if (showOverlay)
             {
-                _builder.Append("Grounded : ").Append(playerController.IsGrounded ? "YA" : "TIDAK").Append('\n');
-                _builder.Append("Speed XZ : ").Append(playerController.HorizontalSpeed.ToString("0.00")).Append(" m/s\n");
-                _builder.Append("Vel Y    : ").Append(playerController.Velocity.y.ToString("0.00")).Append(" m/s");
-            }
-            else
-            {
-                _builder.Append("PlayerController tidak ditemukan");
+                _debugBuilder.Clear();
+                _debugBuilder.Append("Pulau Kabut Debug [F3]\n");
+                _debugBuilder.Append("FPS      : ").Append(Mathf.RoundToInt(_currentFps)).Append('\n');
+
+                if (playerController != null)
+                {
+                    string groundLabel = playerController.IsGrounded
+                        ? "YA"
+                        : (playerController.IsGliding ? "GLIDE" : "TIDAK");
+                    _debugBuilder.Append("Grounded : ").Append(groundLabel).Append('\n');
+                    _debugBuilder.Append("Speed XZ : ").Append(playerController.HorizontalSpeed.ToString("0.00")).Append(" m/s\n");
+                    _debugBuilder.Append("Vel Y    : ").Append(playerController.Velocity.y.ToString("0.00")).Append(" m/s");
+                }
+
+                if (GameManager.Instance != null)
+                {
+                    _debugBuilder.Append("\nState    : ").Append(GameManager.Instance.CurrentState);
+                }
+
+                _cachedDebugText = _debugBuilder.ToString();
             }
 
-            if (GameManager.Instance != null)
+            if (showControlHints)
             {
-                _builder.Append("\nState    : ").Append(GameManager.Instance.CurrentState);
-            }
+                string lanternStatus = lanternController != null && lanternController.IsLit ? "NYALA" : "PADAM";
+                string povStatus = cameraController != null && cameraController.IsFirstPerson ? "First-Person" : "Third-Person";
 
-            _cachedDisplayText = _builder.ToString();
+                _hintBuilder.Clear();
+                _hintBuilder.Append("KONTROL [H sembunyi]\n");
+                _hintBuilder.Append("[WASD]   Jalan / Lari\n");
+                _hintBuilder.Append("[Mouse]  Arahkan Kamera\n");
+                _hintBuilder.Append("[Spasi]  Lompat (Tahan di udara = Glide)\n");
+                _hintBuilder.Append("[F]      Lentera : ").Append(lanternStatus).Append('\n');
+                _hintBuilder.Append("[V]      Kamera  : ").Append(povStatus).Append('\n');
+                _hintBuilder.Append("[Esc]    Jeda / Lanjut");
+
+                _cachedHintText = _hintBuilder.ToString();
+            }
         }
 
         private void OnGUI()
         {
-            if (!showOverlay || string.IsNullOrEmpty(_cachedDisplayText))
+            EnsureStyles();
+
+            if (showOverlay && !string.IsNullOrEmpty(_cachedDebugText))
             {
-                return;
+                GUI.Box(_debugRect, _cachedDebugText, _boxStyle);
             }
 
+            if (showControlHints && !string.IsNullOrEmpty(_cachedHintText))
+            {
+                const float hintWidth = 315f;
+                const float hintHeight = 148f;
+                Rect hintRect = new Rect(12f, Screen.height - hintHeight - 12f, hintWidth, hintHeight);
+                GUI.Box(hintRect, _cachedHintText, _boxStyle);
+            }
+
+            if (GameManager.Instance != null && GameManager.Instance.IsPaused)
+            {
+                const float w = 360f;
+                const float h = 68f;
+                Rect pauseRect = new Rect((Screen.width - w) * 0.5f, (Screen.height - h) * 0.5f, w, h);
+                GUI.Box(pauseRect, "GAME DIJEDA\nTekan [Esc] untuk melanjutkan", _pauseStyle);
+            }
+        }
+
+        private void EnsureStyles()
+        {
             if (_boxStyle == null)
             {
                 _boxStyle = new GUIStyle(GUI.skin.box)
@@ -106,7 +167,17 @@ namespace PulauKabut.Player
                 _boxStyle.normal.textColor = Color.white;
             }
 
-            GUI.Box(_panelRect, _cachedDisplayText, _boxStyle);
+            if (_pauseStyle == null)
+            {
+                _pauseStyle = new GUIStyle(GUI.skin.box)
+                {
+                    alignment = TextAnchor.MiddleCenter,
+                    fontSize = 16,
+                    fontStyle = FontStyle.Bold,
+                    padding = new RectOffset(12, 12, 10, 10)
+                };
+                _pauseStyle.normal.textColor = Color.white;
+            }
         }
     }
 }

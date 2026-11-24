@@ -42,6 +42,21 @@ namespace PulauKabut.Player
         [Min(0f)]
         [SerializeField] private float jumpBufferTime = 0.10f;
 
+        [Header("Glide (Melayang di Udara)")]
+        [Tooltip("Aktifkan kemampuan melayang saat menahan tombol lompat ketika sedang jatuh.")]
+        [SerializeField] private bool enableGlide = true;
+
+        [Tooltip("Kecepatan jatuh maksimum saat melayang (nilai negatif kecil, m/s).")]
+        [SerializeField] private float glideFallSpeed = -2.2f;
+
+        [Tooltip("Kecepatan gerak mendatar saat melayang di udara (m/s).")]
+        [Min(0.5f)]
+        [SerializeField] private float glideMoveSpeed = 6.5f;
+
+        [Tooltip("Waktu penyesuaian arah saat melayang di udara (detik).")]
+        [Min(0.01f)]
+        [SerializeField] private float glideAccelerationTime = 0.25f;
+
         [Header("Gravitasi")]
         [Tooltip("Percepatan gravitasi ke bawah (nilai negatif, m/s^2).")]
         [SerializeField] private float gravity = -25f;
@@ -109,6 +124,10 @@ namespace PulauKabut.Player
         public float JumpCutMultiplier => jumpCutMultiplier;
         public float CoyoteTime => coyoteTime;
         public float JumpBufferTime => jumpBufferTime;
+        public bool EnableGlide => enableGlide;
+        public float GlideFallSpeed => glideFallSpeed;
+        public float GlideMoveSpeed => glideMoveSpeed;
+        public float GlideAccelerationTime => glideAccelerationTime;
         public float Gravity => gravity;
         public float GroundedStickForce => groundedStickForce;
         public float MaxFallSpeed => maxFallSpeed;
