@@ -1,0 +1,152 @@
+using UnityEngine;
+
+namespace PulauKabut.Player
+{
+    /// <summary>
+    /// Mengendalikan rotasi titik mata (POV 1 First-Person), penguncian kursor,
+    /// serta menyembunyikan/menampilkan Visuals karakter otomatis saat kamera berpindah antara POV 1 dan POV 2.
+    /// </summary>
+    public class PlayerCameraController : MonoBehaviour
+    {
+        [Header("Referensi")]
+        [Tooltip("Aset pengaturan pemain yang menyimpan sensitivitas, damping, dan batas sudut kamera.")]
+        [SerializeField] private PlayerMovementSettings settings;
+
+        [Tooltip("Titik mata karakter (CameraTarget) yang diikuti oleh Cinemachine POV 1.")]
+        [SerializeField] private Transform cameraTarget;
+
+        [Tooltip("Objek Visuals karakter. Otomatis disembunyikan saat POV 1 dekat mata dan tampil penuh saat POV 2 aktif.")]
+        [SerializeField] private GameObject visualsRoot;
+
+        [Header("Kursor")]
+        [Tooltip("Kunci dan sembunyikan kursor otomatis saat mulai bermain.")]
+        [SerializeField] private bool lockCursorOnStart = true;
+
+        private PlayerInputActions _input;
+        private Transform _mainCameraTransform;
+        private float _targetYaw;
+        private float _targetPitch;
+        private float _currentYaw;
+        private float _currentPitch;
+        private bool _isCursorLocked;
+        private bool _isVisualsVisible = true;
+
+        /// <summary>True jika kursor sedang terkunci untuk kontrol kamera.</summary>
+        public bool IsCursorLocked => _isCursorLocked;
+
+        private void Awake()
+        {
+            if (settings == null || cameraTarget == null)
+            {
+                Debug.LogError($"[{nameof(PlayerCameraController)}] Settings atau CameraTarget belum diisi pada '{name}'. Komponen dinonaktifkan.", this);
+                enabled = false;
+                return;
+            }
+
+            _input = new PlayerInputActions();
+
+            // Ambil sudut awal dari CameraTarget agar tidak melompat saat mulai bermain
+            Vector3 initialEuler = cameraTarget.eulerAngles;
+            _targetYaw = initialEuler.y;
+            _currentYaw = initialEuler.y;
+
+            float normalizedPitch = initialEuler.x > 180f ? initialEuler.x - 360f : initialEuler.x;
+            _targetPitch = Mathf.Clamp(normalizedPitch, settings.MinPitch, settings.MaxPitch);
+            _currentPitch = _targetPitch;
+        }
+
+        private void Start()
+        {
+            if (Camera.main != null)
+            {
+                _mainCameraTransform = Camera.main.transform;
+            }
+
+            if (lockCursorOnStart)
+            {
+                SetCursorLocked(true);
+            }
+        }
+
+        private void OnEnable()
+        {
+            _input?.Player.Enable();
+        }
+
+        private void OnDisable()
+        {
+            _input?.Player.Disable();
+        }
+
+        private void OnDestroy()
+        {
+            _input?.Dispose();
+        }
+
+        private void Update()
+        {
+            // Jangan memutar kamera jika game dijeda atau kursor sedang bebas
+            if (Time.timeScale <= 0f || !_isCursorLocked)
+            {
+                return;
+            }
+
+            // Baca input Look langsung tanpa alokasi memori
+            Vector2 lookInput = _input.Player.Look.ReadValue<Vector2>();
+            float sensitivity = settings.LookSensitivity;
+
+            _targetYaw += lookInput.x * sensitivity;
+            float pitchDelta = lookInput.y * sensitivity * (settings.InvertY ? 1f : -1f);
+            _targetPitch = Mathf.Clamp(_targetPitch + pitchDelta, settings.MinPitch, settings.MaxPitch);
+
+            // Terapkan damping halus yang tidak bergantung pada framerate
+            if (settings.LookSmoothing > 0f)
+            {
+                float t = 1f - Mathf.Exp(-settings.LookSmoothing * Time.deltaTime);
+                _currentYaw = Mathf.LerpAngle(_currentYaw, _targetYaw, t);
+                _currentPitch = Mathf.Lerp(_currentPitch, _targetPitch, t);
+            }
+            else
+            {
+                _currentYaw = _targetYaw;
+                _currentPitch = _targetPitch;
+            }
+
+            cameraTarget.rotation = Quaternion.Euler(_currentPitch, _currentYaw, 0f);
+        }
+
+        private void LateUpdate()
+        {
+            UpdateVisualsVisibility();
+        }
+
+        /// <summary>
+        /// Mengunci atau membebaskan kursor (juga dipanggil oleh GameManager saat jeda/resume).
+        /// </summary>
+        public void SetCursorLocked(bool locked)
+        {
+            _isCursorLocked = locked;
+            Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
+            Cursor.visible = !locked;
+        }
+
+        private void UpdateVisualsVisibility()
+        {
+            if (visualsRoot == null || _mainCameraTransform == null)
+            {
+                return;
+            }
+
+            // Sembunyikan tubuh karakter hanya saat lensa kamera berada tepat di kepala (POV 1)
+            float hideDistSqr = settings.FirstPersonHideDistance * settings.FirstPersonHideDistance;
+            float currentDistSqr = (_mainCameraTransform.position - cameraTarget.position).sqrMagnitude;
+            bool shouldShowVisuals = currentDistSqr >= hideDistSqr;
+
+            if (shouldShowVisuals != _isVisualsVisible)
+            {
+                _isVisualsVisible = shouldShowVisuals;
+                visualsRoot.SetActive(_isVisualsVisible);
+            }
+        }
+    }
+}
