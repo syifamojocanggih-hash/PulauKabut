@@ -6,6 +6,64 @@ Dokumen ini menjadi panduan utama untuk menyiapkan lingkungan kerja, memahami st
 
 ---
 
+## Panduan Cepat Harian Tim (Anti Tabrakan / Anti Conflict)
+
+> **Bisa kerja bareng di proyek yang sama tanpa tabrakan?** **BISA!** Selama setiap orang bekerja di **branch & folder bagiannya masing-masing** dan tidak mengedit file scene `.unity` yang sama secara bersamaan.
+
+### 1. Zona Aman Masing-Masing (Biar 0% Conflict)
+
+| Anggota / Peran | Branch Kerja Kamu | Folder yang Boleh Kamu Edit | JANGAN Di-Save / Diedit |
+| --- | --- | --- | --- |
+| **Programmer** | `feat/player-movement`, `feat/lantern-fog`, `feat/ui-dialog`, `feat/shards-story` | `Assets/_Project/Scripts/`, `Prefabs/Player/`, `Sandbox_Player` | Scene orang lain |
+| **3D Artist** | `art/characters`, `art/environment` | `Assets/_Project/Art/`, `Animations/`, `Shaders/`, `Sandbox_Characters`, `Sandbox_Environment` | `Zone_Mangrove.unity`, `Scripts/` |
+| **Game Designer / UI / Audio** | `level/greybox-mangrove`, `audio/sfx-music` | `Assets/_Project/Scenes/Zone_Mangrove/`, `Dialog/`, `UI/`, `Audio/`, `Sandbox_UI` | `Scripts/` |
+
+### 2. Langkah Harian (Copy-Paste di Terminal / Git Bash)
+
+**A. Sebelum mulai kerja (ambil update terbaru dari teman):**
+```bash
+git checkout dev
+git pull origin dev
+git lfs pull
+```
+
+**B. Pindah ke branch bagianmu & sinkronkan dengan `dev`** *(ganti `art/characters` sesuai branch kamu)*:
+```bash
+git checkout art/characters
+git merge dev
+```
+
+**C. Kerjakan tugasmu di Unity**, lalu simpan (**`Ctrl + S`**).
+> **Tips penting:** Kalau kamu cuma mau buka `Zone_Mangrove.unity` untuk *playtest* (padahal itu bukan bagianmu), saat menutup/pindah scene klik **"Don't Save"** supaya tidak ikut mengubah scene temanmu!
+
+**D. Simpan & upload hasil kerjamu ke GitHub:**
+```bash
+git status
+git add .
+git commit -m "art: jelaskan singkat perubahanmu"
+git push origin art/characters
+```
+
+**E. Gabungkan ke `dev` kalau fitur/asetmu sudah siap dipakai teman lain:**
+```bash
+git checkout dev
+git pull origin dev
+git merge --no-ff art/characters
+git push origin dev
+git checkout art/characters
+```
+
+### 3. Tiga Aturan Emas Anti-Tabrakan
+1. **Jangan pernah commit langsung di `main` atau `dev`** — selalu pakai branch bagianmu sendiri.
+2. **Jangan ubah atau hapus file `.meta` lewat File Explorer** — selalu pindahkan/hapus aset lewat jendela **Project** di dalam Unity.
+3. **Kalau tidak sengaja mengubah file yang bukan bagianmu**, batalkan sebelum commit:
+   ```bash
+   git checkout -- path/file_yang_tidak_sengaja_diubah
+   ```
+   *(Atau klik kanan file tersebut di GitHub Desktop / VS Code -> **Discard Changes**).*
+
+---
+
 ## Daftar Isi
 
 1. [Gambaran Proyek & Pembagian Peran](#1-gambaran-proyek--pembagian-peran)
