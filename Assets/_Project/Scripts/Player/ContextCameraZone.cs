@@ -35,10 +35,21 @@ namespace PulauKabut.Player
         [Tooltip("Jika dicentang, gerak pemain berhenti sejenak selama momen alur berlangsung agar fokus melihat tujuan.")]
         [SerializeField] private bool pausePlayerDuringShot = false;
 
+        [Header("Teks Narasi Sinematik (Opsional)")]
+        [Tooltip("Judul singkat lokasi/momen yang tampil saat kamera alur aktif.")]
+        [SerializeField] private string captionTitle = "";
+
+        [Tooltip("Kalimat narasi singkat (subtitle) yang tampil di bawah layar selama momen alur berlangsung.")]
+        [TextArea(1, 3)]
+        [SerializeField] private string captionSubtitle = "";
+
         private bool _hasPlayed;
         private bool _isActive;
         private float _activeTimer;
         private PlayerController _activePlayer;
+        private GUIStyle _captionBoxStyle;
+        private GUIStyle _captionTitleStyle;
+        private GUIStyle _captionBodyStyle;
 
         private void Reset()
         {
@@ -138,6 +149,57 @@ namespace PulauKabut.Player
 
             contextCamera.Priority.Enabled = true;
             contextCamera.Priority.Value = isActive ? activePriority : inactivePriority;
+        }
+
+        private void OnGUI()
+        {
+            if (!_isActive || Time.timeScale <= 0f)
+            {
+                return;
+            }
+
+            bool hasTitle = !string.IsNullOrEmpty(captionTitle);
+            bool hasSub = !string.IsNullOrEmpty(captionSubtitle);
+            if (!hasTitle && !hasSub)
+            {
+                return;
+            }
+
+            if (_captionBoxStyle == null)
+            {
+                _captionBoxStyle = new GUIStyle(GUI.skin.box);
+                _captionTitleStyle = new GUIStyle(GUI.skin.label)
+                {
+                    alignment = TextAnchor.MiddleCenter,
+                    fontSize = 16,
+                    fontStyle = FontStyle.Bold
+                };
+                _captionTitleStyle.normal.textColor = new Color(1f, 0.88f, 0.48f);
+
+                _captionBodyStyle = new GUIStyle(GUI.skin.label)
+                {
+                    alignment = TextAnchor.MiddleCenter,
+                    fontSize = 14,
+                    wordWrap = true
+                };
+                _captionBodyStyle.normal.textColor = Color.white;
+            }
+
+            float w = Mathf.Min(640f, Screen.width - 80f);
+            const float h = 84f;
+            Rect panel = new Rect((Screen.width - w) * 0.5f, Screen.height - h - 34f, w, h);
+            GUI.Box(panel, GUIContent.none, _captionBoxStyle);
+
+            if (hasTitle)
+            {
+                GUI.Label(new Rect(panel.x + 16f, panel.y + 10f, panel.width - 32f, 26f), captionTitle, _captionTitleStyle);
+            }
+
+            if (hasSub)
+            {
+                float yOffset = hasTitle ? 38f : 18f;
+                GUI.Label(new Rect(panel.x + 16f, panel.y + yOffset, panel.width - 32f, 40f), captionSubtitle, _captionBodyStyle);
+            }
         }
 
 #if UNITY_EDITOR

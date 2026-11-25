@@ -135,7 +135,8 @@ namespace PulauKabut.Player
 
             if (showOverlay && !string.IsNullOrEmpty(_cachedDebugText))
             {
-                GUI.Box(_debugRect, _cachedDebugText, _boxStyle);
+                Rect rightTopRect = new Rect(Screen.width - _debugRect.width - 12f, 12f, _debugRect.width, _debugRect.height);
+                GUI.Box(rightTopRect, _cachedDebugText, _boxStyle);
             }
 
             if (showControlHints && !string.IsNullOrEmpty(_cachedHintText))

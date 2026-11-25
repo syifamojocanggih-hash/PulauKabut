@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ae8c286c6b64b548ad5fb25a41da078, type: 3}
+  m_Name: Dialog_Kenangan_03_Puncak
+  m_EditorClassIdentifier: Assembly-CSharp::PulauKabut.Dialog.DialogData
+  speakerName: "Kenangan \u2014 Cahaya Pelita"
+  lines:
+  - Dari puncak ini, seluruh Pulau Kabut terlihat membentang hingga ujung cakrawala.
+  - Kumpulkan Pecahan Cahaya di setiap wilayah untuk memulihkan Desa Pelita sepenuhnya.
