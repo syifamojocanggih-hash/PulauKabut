@@ -132,12 +132,11 @@ namespace PulauKabut.Player
             Rect pillRect = new Rect((Screen.width - w) * 0.5f, Screen.height - 132f, w, h);
             GUI.Box(pillRect, GUIContent.none, _pillStyle);
 
-            // Badge bulat tombol [E] di sisi kiri pill
+            // Keycap emas chamfered tombol [E] di sisi kiri (gaya HUD Lengkap)
             Rect badgeRect = new Rect(pillRect.x + leftPad, pillRect.y + (h - badgeSize) * 0.5f, badgeSize, badgeSize);
-            GUI.DrawTexture(badgeRect, StylizedUITheme.BadgeCircleTex);
-            GUI.Label(badgeRect, "E", _badgeTextStyle);
+            GUI.Box(badgeRect, "E", _badgeTextStyle);
 
-            // Teks aksi + drop shadow tipis agar tajam di atas latar kabut
+            // Teks aksi krem + drop shadow tipis agar tajam di atas kabut
             Rect textRect = new Rect(badgeRect.xMax + gap, pillRect.y, textSize.x + 6f, h);
             GUI.Label(new Rect(textRect.x + 1f, textRect.y + 1f, textRect.width, textRect.height), _promptContent, _shadowLabelStyle);
             GUI.Label(textRect, _promptContent, _labelStyle);
@@ -152,13 +151,7 @@ namespace PulauKabut.Player
 
             if (_badgeTextStyle == null)
             {
-                _badgeTextStyle = new GUIStyle(GUI.skin.label)
-                {
-                    alignment = TextAnchor.MiddleCenter,
-                    fontSize = 14,
-                    fontStyle = FontStyle.Bold
-                };
-                _badgeTextStyle.normal.textColor = new Color(0.16f, 0.14f, 0.10f);
+                _badgeTextStyle = StylizedUITheme.CreateKeycapStyle(14);
             }
 
             if (_labelStyle == null)
@@ -170,13 +163,13 @@ namespace PulauKabut.Player
                     fontStyle = FontStyle.Bold,
                     wordWrap = false
                 };
-                _labelStyle.normal.textColor = Color.white;
+                _labelStyle.normal.textColor = StylizedUITheme.CreamText;
             }
 
             if (_shadowLabelStyle == null)
             {
                 _shadowLabelStyle = new GUIStyle(_labelStyle);
-                _shadowLabelStyle.normal.textColor = new Color(0.08f, 0.12f, 0.15f, 0.85f);
+                _shadowLabelStyle.normal.textColor = new Color(0.03f, 0.08f, 0.10f, 0.88f);
             }
         }
 

@@ -34,11 +34,14 @@ namespace PulauKabut.Player
         private string _cachedLanternBarText = string.Empty;
 
         private GUIStyle _boxStyle;
+        private GUIStyle _mintBoxStyle;
         private GUIStyle _pauseStyle;
         private GUIStyle _barLabelStyle;
         private GUIStyle _toggleBtnStyle;
+        private GUIStyle _keycapStyle;
+        private GUIStyle _btnTextStyle;
         private Texture2D _solidTex;
-        private Rect _debugRect = new Rect(12f, 12f, 240f, 120f);
+        private Rect _debugRect = new Rect(12f, 12f, 240f, 128f);
 
         private int _frameCount;
         private float _elapsedTime;
@@ -183,46 +186,46 @@ namespace PulauKabut.Player
         {
             EnsureStyles();
 
-            // Bar tombol toggle mini di pojok kanan atas (bisa diklik maupun pakai shortcut J / H / F3)
-            const float btnH = 26f;
-            const float gap = 6f;
-            const float fpsW = 76f;
-            const float hintBtnW = 88f;
-            const float misiBtnW = 76f;
+            // Bar tombol toggle chamfered gaya HUD Lengkap di pojok kanan atas ([J] Misi | [H] Kontrol | [F3] FPS)
+            const float btnH = 34f;
+            const float gap = 8f;
+            const float fpsW = 88f;
+            const float hintBtnW = 104f;
+            const float misiBtnW = 84f;
             float rightX = Screen.width - 14f;
 
             Rect fpsBtnRect = new Rect(rightX - fpsW, 14f, fpsW, btnH);
             Rect hintBtnRect = new Rect(fpsBtnRect.x - gap - hintBtnW, 14f, hintBtnW, btnH);
             Rect misiBtnRect = new Rect(hintBtnRect.x - gap - misiBtnW, 14f, misiBtnW, btnH);
 
-            if (GUI.Button(misiBtnRect, "[J] Misi", _toggleBtnStyle) && UI.ObjectiveGuide.Instance != null)
+            if (UI.StylizedUITheme.DrawKeyButton(misiBtnRect, "J", "Misi", _toggleBtnStyle, _keycapStyle, _btnTextStyle) && UI.ObjectiveGuide.Instance != null)
             {
                 UI.ObjectiveGuide.Instance.ToggleMissionList();
             }
 
-            if (GUI.Button(hintBtnRect, "[H] Kontrol", _toggleBtnStyle))
+            if (UI.StylizedUITheme.DrawKeyButton(hintBtnRect, "H", "Kontrol", _toggleBtnStyle, _keycapStyle, _btnTextStyle))
             {
                 showControlHints = !showControlHints;
                 RebuildTexts();
             }
 
-            if (GUI.Button(fpsBtnRect, "[F3] FPS", _toggleBtnStyle))
+            if (UI.StylizedUITheme.DrawKeyButton(fpsBtnRect, "F3", "FPS", _toggleBtnStyle, _keycapStyle, _btnTextStyle))
             {
                 showOverlay = !showOverlay;
                 RebuildTexts();
             }
 
             // Jika panel Daftar Misi terbuka, geser panel FPS sedikit ke bawah supaya tidak bertumpuk
-            float rightPanelY = 48f;
+            float rightPanelY = 56f;
             if (UI.ObjectiveGuide.Instance != null && UI.ObjectiveGuide.Instance.ShowMissionList)
             {
-                rightPanelY = 230f;
+                rightPanelY = 236f;
             }
 
             if (showOverlay && !string.IsNullOrEmpty(_cachedDebugText))
             {
                 Rect rightTopRect = new Rect(Screen.width - _debugRect.width - 14f, rightPanelY, _debugRect.width, _debugRect.height);
-                GUI.Box(rightTopRect, _cachedDebugText, _boxStyle);
+                GUI.Box(rightTopRect, _cachedDebugText, _mintBoxStyle);
             }
 
             const float hintWidth = 310f;
@@ -296,13 +299,12 @@ namespace PulauKabut.Player
         {
             if (_boxStyle == null)
             {
-                _boxStyle = new GUIStyle(GUI.skin.box)
-                {
-                    alignment = TextAnchor.UpperLeft,
-                    fontSize = 13,
-                    padding = new RectOffset(10, 10, 8, 8)
-                };
-                _boxStyle.normal.textColor = Color.white;
+                _boxStyle = UI.StylizedUITheme.CreateGoldPanelStyle(13, TextAnchor.UpperLeft, 14, 10);
+            }
+
+            if (_mintBoxStyle == null)
+            {
+                _mintBoxStyle = UI.StylizedUITheme.CreateMintPanelStyle(13, TextAnchor.UpperLeft, 14, 10);
             }
 
             if (_barLabelStyle == null)
@@ -313,7 +315,7 @@ namespace PulauKabut.Player
                     fontSize = 12,
                     fontStyle = FontStyle.Bold
                 };
-                _barLabelStyle.normal.textColor = new Color(1f, 0.95f, 0.82f);
+                _barLabelStyle.normal.textColor = UI.StylizedUITheme.GoldAccent;
             }
 
             if (_solidTex == null)
@@ -325,19 +327,28 @@ namespace PulauKabut.Player
 
             if (_toggleBtnStyle == null)
             {
-                _toggleBtnStyle = UI.StylizedUITheme.CreatePillStyle(11, TextAnchor.MiddleCenter, 8, 4);
+                _toggleBtnStyle = UI.StylizedUITheme.CreatePillStyle(12, TextAnchor.MiddleCenter, 8, 4);
+            }
+
+            if (_keycapStyle == null)
+            {
+                _keycapStyle = UI.StylizedUITheme.CreateKeycapStyle(11);
+            }
+
+            if (_btnTextStyle == null)
+            {
+                _btnTextStyle = new GUIStyle(GUI.skin.label)
+                {
+                    alignment = TextAnchor.MiddleLeft,
+                    fontSize = 13,
+                    fontStyle = FontStyle.Bold
+                };
+                _btnTextStyle.normal.textColor = UI.StylizedUITheme.CreamText;
             }
 
             if (_pauseStyle == null)
             {
-                _pauseStyle = new GUIStyle(GUI.skin.box)
-                {
-                    alignment = TextAnchor.MiddleCenter,
-                    fontSize = 16,
-                    fontStyle = FontStyle.Bold,
-                    padding = new RectOffset(12, 12, 10, 10)
-                };
-                _pauseStyle.normal.textColor = Color.white;
+                _pauseStyle = UI.StylizedUITheme.CreateGoldPanelStyle(16, TextAnchor.MiddleCenter, 16, 12);
             }
         }
     }
