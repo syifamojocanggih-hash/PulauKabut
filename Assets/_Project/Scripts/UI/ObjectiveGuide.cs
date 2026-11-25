@@ -218,14 +218,8 @@ namespace PulauKabut.UI
 
             if (_listStyle == null)
             {
-                _listStyle = new GUIStyle(GUI.skin.box)
-                {
-                    alignment = TextAnchor.UpperLeft,
-                    fontSize = 13,
-                    wordWrap = true,
-                    padding = new RectOffset(12, 12, 10, 10)
-                };
-                _listStyle.normal.textColor = new Color(0.95f, 0.97f, 1f);
+                _listStyle = StylizedUITheme.CreateGoldPanelStyle(13, TextAnchor.UpperLeft, 16, 12);
+                _listStyle.normal.textColor = StylizedUITheme.CreamText;
             }
         }
     }

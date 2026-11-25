@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using PulauKabut.UI;
 using UnityEngine;
 
 namespace PulauKabut.Core
@@ -112,18 +113,12 @@ namespace PulauKabut.Core
 
             if (_hudStyle == null)
             {
-                _hudStyle = new GUIStyle(GUI.skin.box)
-                {
-                    alignment = TextAnchor.UpperLeft,
-                    fontSize = 13,
-                    fontStyle = FontStyle.Bold,
-                    padding = new RectOffset(10, 10, 8, 8)
-                };
-                _hudStyle.normal.textColor = new Color(1f, 0.94f, 0.72f);
+                _hudStyle = StylizedUITheme.CreateGoldPanelStyle(13, TextAnchor.UpperLeft, 14, 10);
+                _hudStyle.normal.textColor = StylizedUITheme.CreamText;
             }
 
             // Ditempatkan rapi tepat di bawah Minimap bulat pojok kiri atas
-            GUI.Box(new Rect(14f, 166f, 210f, 66f), _cachedHudText, _hudStyle);
+            GUI.Box(new Rect(14f, 166f, 224f, 74f), _cachedHudText, _hudStyle);
         }
     }
 }
