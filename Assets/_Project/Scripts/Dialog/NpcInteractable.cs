@@ -1,4 +1,5 @@
 using PulauKabut.Core;
+using PulauKabut.Lantern;
 using PulauKabut.Player;
 using PulauKabut.UI;
 using Unity.Cinemachine;
@@ -33,11 +34,23 @@ namespace PulauKabut.Dialog
         [SerializeField] private Transform nextObjectiveTarget;
         [SerializeField] private string nextObjectiveTitle = "Menuju Menara Lentera di Puncak";
 
+        [Tooltip("Jika true, NPC ini akan memberikan Lentera kepada pemain setelah selesai bicara (misal Mbah Sauh).")]
+        [SerializeField] private bool grantLanternOnDialogComplete = false;
+
         private PlayerController _currentPlayer;
         private bool _isTransitioning;
 
         public string PromptText => promptText;
         public bool CanInteract => !_isTransitioning && dialogData != null && (DialogManager.Instance == null || !DialogManager.Instance.IsOpen);
+
+        /// <summary>Mengganti DialogData NPC secara dinamis (misal saat tahap pemulihan Desa Pelita meningkat).</summary>
+        public void SetDialogData(DialogData newDialog)
+        {
+            if (newDialog != null)
+            {
+                dialogData = newDialog;
+            }
+        }
 
         private void Awake()
         {
@@ -98,6 +111,10 @@ namespace PulauKabut.Dialog
 
         private void UpdateNextObjective()
         {
+            if (grantLanternOnDialogComplete && LanternController.ActiveLantern != null)
+            {
+                LanternController.ActiveLantern.GrantLantern(turnOnImmediately: false);
+            }
             if (nextObjectiveTarget != null && ObjectiveGuide.Instance != null)
             {
                 ObjectiveGuide.Instance.SetObjective(nextObjectiveTitle, nextObjectiveTarget);

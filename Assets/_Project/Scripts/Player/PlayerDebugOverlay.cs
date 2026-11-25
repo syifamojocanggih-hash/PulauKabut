@@ -3,6 +3,7 @@ using PulauKabut.Core;
 using PulauKabut.Lantern;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 namespace PulauKabut.Player
 {
@@ -39,9 +40,23 @@ namespace PulauKabut.Player
         private GUIStyle _barLabelStyle;
         private GUIStyle _toggleBtnStyle;
         private GUIStyle _keycapStyle;
+        private GUIStyle _mintBadgeStyle;
         private GUIStyle _btnTextStyle;
+        private GUIStyle _goldTitleStyle;
+        private GUIStyle _mintTitleStyle;
+        private GUIStyle _seafoamLabelStyle;
+        private GUIStyle _rightValCreamStyle;
+        private GUIStyle _rightValMintStyle;
+        private GUIStyle _rightValGoldStyle;
         private Texture2D _solidTex;
-        private Rect _debugRect = new Rect(12f, 12f, 240f, 128f);
+        private string _lanternRightStatus = "Siap (100%)";
+        private string _fpsValText = "0";
+        private string _groundValText = "YA";
+        private string _speedValText = "0.00 m/s";
+        private string _velYValText = "0.00 m/s";
+        private string _stateValText = "Playing";
+        private string _lanternHintLabel = "Lentera: PADAM";
+        private string _povHintLabel = "Kamera: Third-Person";
 
         private int _frameCount;
         private float _elapsedTime;
@@ -97,76 +112,45 @@ namespace PulauKabut.Player
         {
             if (showOverlay)
             {
-                _debugBuilder.Clear();
-                _debugBuilder.Append("Pulau Kabut Debug [F3]\n");
-                _debugBuilder.Append("FPS      : ").Append(Mathf.RoundToInt(_currentFps)).Append('\n');
-
+                _fpsValText = Mathf.RoundToInt(_currentFps).ToString();
                 if (playerController != null)
                 {
-                    string groundLabel = playerController.IsGrounded
+                    _groundValText = playerController.IsGrounded
                         ? "YA"
                         : (playerController.IsGliding ? "GLIDE" : "TIDAK");
-                    _debugBuilder.Append("Grounded : ").Append(groundLabel).Append('\n');
-                    _debugBuilder.Append("Speed XZ : ").Append(playerController.HorizontalSpeed.ToString("0.00")).Append(" m/s\n");
-                    _debugBuilder.Append("Vel Y    : ").Append(playerController.Velocity.y.ToString("0.00")).Append(" m/s");
+                    _speedValText = playerController.HorizontalSpeed.ToString("0.00") + " m/s";
+                    _velYValText = playerController.Velocity.y.ToString("0.00") + " m/s";
                 }
-
                 if (GameManager.Instance != null)
                 {
-                    _debugBuilder.Append("\nState    : ").Append(GameManager.Instance.CurrentState);
+                    _stateValText = GameManager.Instance.CurrentState.ToString();
                 }
-
-                _cachedDebugText = _debugBuilder.ToString();
             }
 
             if (showControlHints)
             {
-                string lanternStatus = GetLanternStatusLabel();
-                string povStatus = cameraController != null && cameraController.IsFirstPerson ? "First-Person" : "Third-Person";
-
-                _hintBuilder.Clear();
-                _hintBuilder.Append("KONTROL [H sembunyi]\n");
-                _hintBuilder.Append("[WASD]   Jalan  |  [Shift] Sprint\n");
-                _hintBuilder.Append("[Mouse]  Arahkan Kamera\n");
-                _hintBuilder.Append("[Spasi]  Lompat (Tahan di udara = Glide)\n");
-                _hintBuilder.Append("[E]      Interaksi / Bicara NPC\n");
-                _hintBuilder.Append("[F]      Lentera : ").Append(lanternStatus).Append('\n');
-                _hintBuilder.Append("[V]      Kamera  : ").Append(povStatus).Append('\n');
-                _hintBuilder.Append("[Esc]    Jeda / Lanjut");
-
-                _cachedHintText = _hintBuilder.ToString();
+                _lanternHintLabel = "Lentera: " + GetLanternStatusLabel();
+                _povHintLabel = "Kamera: " + (cameraController != null && cameraController.IsFirstPerson ? "First-Person" : "Third-Person");
             }
 
             if (lanternController != null && lanternController.HasDurationLimit)
             {
                 int pct = Mathf.RoundToInt(lanternController.ChargeNormalized * 100f);
                 int sec = Mathf.CeilToInt(lanternController.RemainingSeconds);
-                _lanternBarBuilder.Clear();
-                _lanternBarBuilder.Append("Lentera [F]  ");
                 if (lanternController.IsLit)
-                {
-                    _lanternBarBuilder.Append(sec).Append(" dtk (").Append(pct).Append("%)");
-                }
+                    _lanternRightStatus = $"{sec} dtk ({pct}%)";
                 else if (!lanternController.CanRelight)
-                {
-                    _lanternBarBuilder.Append("Daya habis - Mengisi (").Append(pct).Append("%)");
-                }
+                    _lanternRightStatus = $"Habis ({pct}%)";
                 else if (lanternController.IsRecharging)
-                {
-                    _lanternBarBuilder.Append("Mengisi... (").Append(pct).Append("%)");
-                }
+                    _lanternRightStatus = $"Mengisi ({pct}%)";
                 else
-                {
-                    _lanternBarBuilder.Append("Siap (").Append(pct).Append("%)");
-                }
-
-                _cachedLanternBarText = _lanternBarBuilder.ToString();
+                    _lanternRightStatus = $"Siap ({pct}%)";
             }
         }
 
         private string GetLanternStatusLabel()
         {
-            if (lanternController == null) return "PADAM";
+            if (lanternController == null || !lanternController.HasLantern) return "BELUM ADA";
             if (lanternController.IsLit) return "NYALA";
             if (!lanternController.CanRelight) return "DAYA HABIS";
             if (lanternController.IsRecharging) return "MENGISI";
@@ -219,77 +203,151 @@ namespace PulauKabut.Player
             float rightPanelY = 56f;
             if (UI.ObjectiveGuide.Instance != null && UI.ObjectiveGuide.Instance.ShowMissionList)
             {
-                rightPanelY = 236f;
+                rightPanelY = 186f;
             }
 
-            if (showOverlay && !string.IsNullOrEmpty(_cachedDebugText))
+            // Panel Debug FPS bergaya Hud.dc.html (bingkai mint + grid 2 kolom rapi)
+            if (showOverlay)
             {
-                Rect rightTopRect = new Rect(Screen.width - _debugRect.width - 14f, rightPanelY, _debugRect.width, _debugRect.height);
-                GUI.Box(rightTopRect, _cachedDebugText, _mintBoxStyle);
+                DrawDebugPanel(Screen.width - 224f - 14f, rightPanelY, 224f, 152f);
             }
 
-            const float hintWidth = 310f;
-            const float hintHeight = 166f;
-            float lanternBarBottomY = Screen.height - 14f;
-
-            if (showControlHints && !string.IsNullOrEmpty(_cachedHintText))
+            // Panel KONTROL di pojok kiri bawah dengan keycap emas (persis Hud.dc.html!)
+            if (showControlHints)
             {
-                Rect hintRect = new Rect(14f, Screen.height - hintHeight - 14f, hintWidth, hintHeight);
-                GUI.Box(hintRect, _cachedHintText, _boxStyle);
-                lanternBarBottomY = hintRect.y - 8f;
+                DrawControlsPanel(14f, Screen.height - 260f - 14f, 296f, 260f);
             }
 
-            if (lanternController != null && lanternController.HasDurationLimit)
+            // Kartu Daya Lentera di pojok KANAN BAWAH baru muncul setelah pemain diberi Lentera oleh Mbah Sauh!
+            if (lanternController != null && lanternController.HasLantern && lanternController.HasDurationLimit)
             {
-                DrawLanternChargeBar(14f, lanternBarBottomY - 46f, hintWidth, 46f);
+                DrawLanternChargeBar(Screen.width - 306f - 14f, Screen.height - 82f - 14f, 306f, 82f);
             }
 
             if (GameManager.Instance != null && GameManager.Instance.IsPaused)
             {
-                const float w = 360f;
-                const float h = 68f;
-                Rect pauseRect = new Rect((Screen.width - w) * 0.5f, (Screen.height - h) * 0.5f, w, h);
-                GUI.Box(pauseRect, "GAME DIJEDA\nTekan [Esc] untuk melanjutkan", _pauseStyle);
+                const float w = 340f;
+                const float h = 232f;
+                Rect card = new Rect((Screen.width - w) * 0.5f, (Screen.height - h) * 0.5f, w, h);
+                GUI.Box(card, GUIContent.none, _boxStyle);
+
+                GUI.Label(new Rect(card.x, card.y + 16f, card.width, 32f), "GAME DIJEDA", _pauseStyle);
+
+                float bx = card.x + 28f;
+                float bw = card.width - 56f;
+                const float bh = 40f;
+
+                if (UI.StylizedUITheme.DrawKeyButton(new Rect(bx, card.y + 62f, bw, bh), "Esc", "Lanjutkan", _toggleBtnStyle, _keycapStyle, _btnTextStyle))
+                {
+                    GameManager.Instance.TogglePause();
+                }
+
+                if (UI.StylizedUITheme.DrawKeyButton(new Rect(bx, card.y + 112f, bw, bh), "S", "Simpan Progres", _toggleBtnStyle, _keycapStyle, _btnTextStyle))
+                {
+                    SaveLoadBridge.Instance?.SaveNow();
+                }
+
+                if (UI.StylizedUITheme.DrawKeyButton(new Rect(bx, card.y + 162f, bw, bh), "M", "Kembali ke Menu Utama", _toggleBtnStyle, _keycapStyle, _btnTextStyle))
+                {
+                    SaveLoadBridge.Instance?.SaveNow();
+                    Time.timeScale = 1f;
+                    Cursor.lockState = CursorLockMode.None;
+                    Cursor.visible = true;
+                    SceneManager.LoadScene("MainMenu");
+                }
             }
+        }
+
+        private void DrawDebugPanel(float x, float y, float w, float h)
+        {
+            Rect card = new Rect(x, y, w, h);
+            GUI.Box(card, GUIContent.none, _mintBoxStyle);
+
+            GUI.Label(new Rect(x + 14f, y + 10f, 160f, 22f), "Pulau Kabut Debug", _mintTitleStyle);
+            GUI.Box(new Rect(card.xMax - 40f, y + 10f, 26f, 20f), "F3", _mintBadgeStyle);
+
+            float lx = x + 14f;
+            float rw = w - 28f;
+            float ry = y + 38f;
+            DrawDebugRow(lx, ry, rw, "FPS", _fpsValText, _rightValCreamStyle); ry += 21f;
+            DrawDebugRow(lx, ry, rw, "Grounded", _groundValText, _rightValMintStyle); ry += 21f;
+            DrawDebugRow(lx, ry, rw, "Speed XZ", _speedValText, _rightValCreamStyle); ry += 21f;
+            DrawDebugRow(lx, ry, rw, "Vel Y", _velYValText, _rightValCreamStyle); ry += 21f;
+            DrawDebugRow(lx, ry, rw, "State", _stateValText, _rightValGoldStyle);
+        }
+
+        private void DrawDebugRow(float x, float y, float w, string label, string val, GUIStyle valStyle)
+        {
+            GUI.Label(new Rect(x, y, 100f, 20f), label, _seafoamLabelStyle);
+            GUI.Label(new Rect(x, y, w, 20f), val, valStyle);
+        }
+
+        private void DrawControlsPanel(float x, float y, float w, float h)
+        {
+            Rect card = new Rect(x, y, w, h);
+            GUI.Box(card, GUIContent.none, _boxStyle);
+
+            GUI.Label(new Rect(x + 16f, y + 10f, 120f, 24f), "KONTROL", _goldTitleStyle);
+            GUI.Box(new Rect(card.xMax - 102f, y + 11f, 24f, 22f), "H", _keycapStyle);
+            GUI.Label(new Rect(card.xMax - 74f, y + 11f, 64f, 22f), "sembunyi", _seafoamLabelStyle);
+
+            float ry = y + 42f;
+            DrawControlRow(x + 16f, ry, "WASD", "Jalan", 48f); ry += 26f;
+            DrawControlRow(x + 16f, ry, "Shift", "Sprint", 48f); ry += 26f;
+            DrawControlRow(x + 16f, ry, "Mouse", "Arahkan Kamera", 52f); ry += 26f;
+            DrawControlRow(x + 16f, ry, "Spasi", "Lompat (Tahan = Glide)", 52f); ry += 26f;
+            DrawControlRow(x + 16f, ry, "E", "Interaksi / Bicara NPC", 28f); ry += 26f;
+            DrawControlRow(x + 16f, ry, "F", _lanternHintLabel, 28f); ry += 26f;
+            DrawControlRow(x + 16f, ry, "V", _povHintLabel, 28f); ry += 26f;
+            DrawControlRow(x + 16f, ry, "Esc", "Jeda / Lanjut", 36f);
+        }
+
+        private void DrawControlRow(float x, float y, string key, string desc, float keyW)
+        {
+            GUI.Box(new Rect(x, y, keyW, 21f), key, _keycapStyle);
+            GUI.Label(new Rect(x + 62f, y, 210f, 21f), desc, _btnTextStyle);
         }
 
         private void DrawLanternChargeBar(float x, float y, float width, float height)
         {
             Rect panelRect = new Rect(x, y, width, height);
-            GUI.Box(panelRect, string.Empty, _boxStyle);
+            GUI.Box(panelRect, GUIContent.none, _boxStyle);
 
-            Rect labelRect = new Rect(x + 10f, y + 4f, width - 20f, 18f);
-            GUI.Label(labelRect, _cachedLanternBarText, _barLabelStyle);
+            // Ikon Lentera + "Lentera" + keycap [F] + status kanan mint ("Siap (100%)")
+            GUI.DrawTexture(new Rect(x + 14f, y + 12f, 24f, 24f), UI.StylizedUITheme.LanternIconTex);
+            GUI.Label(new Rect(x + 44f, y + 12f, 74f, 24f), "Lentera", _goldTitleStyle);
+            GUI.Box(new Rect(x + 112f, y + 13f, 24f, 22f), "F", _keycapStyle);
 
-            Rect bgBarRect = new Rect(x + 10f, y + 25f, width - 20f, 12f);
+            GUIStyle statusStyle = (!lanternController.CanRelight || (lanternController.IsLit && lanternController.IsLowCharge))
+                ? _rightValGoldStyle
+                : _rightValMintStyle;
+            GUI.Label(new Rect(x + 140f, y + 12f, width - 156f, 24f), _lanternRightStatus, statusStyle);
+
+            // 12 segmen jajar genjang miring (persis Hud.dc.html!)
+            const int segCount = 12;
+            float startX = x + 16f;
+            float segY = y + 48f;
+            float totalW = width - 32f;
+            float segSlot = totalW / segCount;
+            float segW = segSlot - 2f;
+            float filledSegments = lanternController.ChargeNormalized * segCount;
+
             Color prevColor = GUI.color;
-
-            GUI.color = new Color(0.12f, 0.14f, 0.18f, 0.9f);
-            GUI.DrawTexture(bgBarRect, _solidTex);
-
-            float fillRatio = Mathf.Clamp01(lanternController.ChargeNormalized);
-            Rect fillBarRect = new Rect(bgBarRect.x + 1f, bgBarRect.y + 1f, (bgBarRect.width - 2f) * fillRatio, bgBarRect.height - 2f);
-
+            Color activeCol;
             if (!lanternController.CanRelight || (lanternController.IsLit && lanternController.IsLowCharge))
-            {
-                GUI.color = new Color(0.95f, 0.35f, 0.22f, 1f);
-            }
-            else if (lanternController.IsLit)
-            {
-                GUI.color = new Color(1f, 0.80f, 0.32f, 1f);
-            }
+                activeCol = new Color(0.96f, 0.38f, 0.24f, 1f);
             else if (lanternController.IsRecharging)
-            {
-                GUI.color = new Color(0.45f, 0.82f, 0.92f, 1f);
-            }
+                activeCol = UI.StylizedUITheme.MintAccent;
             else
-            {
-                GUI.color = new Color(0.86f, 0.76f, 0.45f, 0.85f);
-            }
+                activeCol = UI.StylizedUITheme.GoldAccent;
 
-            if (fillBarRect.width > 0.5f)
+            Color dimCol = new Color(0.965f, 0.937f, 0.851f, 0.16f);
+
+            for (int i = 0; i < segCount; i++)
             {
-                GUI.DrawTexture(fillBarRect, _solidTex);
+                bool lit = (i + 0.35f) <= filledSegments;
+                GUI.color = lit ? activeCol : dimCol;
+                GUI.DrawTexture(new Rect(startX + i * segSlot, segY, segW, 18f), UI.StylizedUITheme.SlantSegTex);
             }
 
             GUI.color = prevColor;
@@ -300,22 +358,19 @@ namespace PulauKabut.Player
             if (_boxStyle == null)
             {
                 _boxStyle = UI.StylizedUITheme.CreateGoldPanelStyle(13, TextAnchor.UpperLeft, 14, 10);
-            }
-
-            if (_mintBoxStyle == null)
-            {
                 _mintBoxStyle = UI.StylizedUITheme.CreateMintPanelStyle(13, TextAnchor.UpperLeft, 14, 10);
-            }
-
-            if (_barLabelStyle == null)
-            {
-                _barLabelStyle = new GUIStyle(GUI.skin.label)
-                {
-                    alignment = TextAnchor.MiddleLeft,
-                    fontSize = 12,
-                    fontStyle = FontStyle.Bold
-                };
-                _barLabelStyle.normal.textColor = UI.StylizedUITheme.GoldAccent;
+                _barLabelStyle = UI.StylizedUITheme.CreateHeadingLabelStyle(14, UI.StylizedUITheme.GoldAccent, TextAnchor.MiddleLeft);
+                _toggleBtnStyle = UI.StylizedUITheme.CreatePillStyle(13, TextAnchor.MiddleCenter, 8, 4);
+                _keycapStyle = UI.StylizedUITheme.CreateKeycapStyle(12);
+                _mintBadgeStyle = UI.StylizedUITheme.CreateMintBadgeStyle(11);
+                _btnTextStyle = UI.StylizedUITheme.CreateBodyLabelStyle(13, UI.StylizedUITheme.CreamText, TextAnchor.MiddleLeft);
+                _goldTitleStyle = UI.StylizedUITheme.CreateHeadingLabelStyle(15, UI.StylizedUITheme.GoldAccent, TextAnchor.MiddleLeft);
+                _mintTitleStyle = UI.StylizedUITheme.CreateHeadingLabelStyle(14, UI.StylizedUITheme.MintAccent, TextAnchor.MiddleLeft);
+                _seafoamLabelStyle = UI.StylizedUITheme.CreateBodyLabelStyle(13, UI.StylizedUITheme.SeafoamText, TextAnchor.MiddleLeft);
+                _rightValCreamStyle = UI.StylizedUITheme.CreateBodyLabelStyle(13, UI.StylizedUITheme.CreamText, TextAnchor.MiddleRight);
+                _rightValMintStyle = UI.StylizedUITheme.CreateHeadingLabelStyle(13, UI.StylizedUITheme.MintAccent, TextAnchor.MiddleRight);
+                _rightValGoldStyle = UI.StylizedUITheme.CreateHeadingLabelStyle(13, UI.StylizedUITheme.GoldAccent, TextAnchor.MiddleRight);
+                _pauseStyle = UI.StylizedUITheme.CreateGoldPanelStyle(16, TextAnchor.MiddleCenter, 16, 12);
             }
 
             if (_solidTex == null)
@@ -323,32 +378,6 @@ namespace PulauKabut.Player
                 _solidTex = new Texture2D(1, 1, TextureFormat.RGBA32, false);
                 _solidTex.SetPixel(0, 0, Color.white);
                 _solidTex.Apply();
-            }
-
-            if (_toggleBtnStyle == null)
-            {
-                _toggleBtnStyle = UI.StylizedUITheme.CreatePillStyle(12, TextAnchor.MiddleCenter, 8, 4);
-            }
-
-            if (_keycapStyle == null)
-            {
-                _keycapStyle = UI.StylizedUITheme.CreateKeycapStyle(11);
-            }
-
-            if (_btnTextStyle == null)
-            {
-                _btnTextStyle = new GUIStyle(GUI.skin.label)
-                {
-                    alignment = TextAnchor.MiddleLeft,
-                    fontSize = 13,
-                    fontStyle = FontStyle.Bold
-                };
-                _btnTextStyle.normal.textColor = UI.StylizedUITheme.CreamText;
-            }
-
-            if (_pauseStyle == null)
-            {
-                _pauseStyle = UI.StylizedUITheme.CreateGoldPanelStyle(16, TextAnchor.MiddleCenter, 16, 12);
             }
         }
     }

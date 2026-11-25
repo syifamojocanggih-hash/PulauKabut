@@ -40,6 +40,13 @@ namespace PulauKabut.UI
         private Transform _cameraTransform;
         private GUIStyle _bannerStyle;
         private GUIStyle _listStyle;
+        private GUIStyle _headerStyle;
+        private GUIStyle _keyStyle;
+        private GUIStyle _subLabelStyle;
+        private GUIStyle _missionTextStyle;
+        private GUIStyle _distBadgeStyle;
+        private GUIStyle _doneTextStyle;
+        private string _distText = "0 m";
         private float _bannerTimer;
         private float _refreshTimer;
 
@@ -142,35 +149,19 @@ namespace PulauKabut.UI
 
         private void RebuildMissionListText()
         {
-            _listBuilder.Clear();
-            _listBuilder.Append("DAFTAR MISI [J tutup]\n");
-            _listBuilder.Append("──────────────────────────────\n");
-
-            if (!string.IsNullOrEmpty(objectiveTitle))
+            if (targetTransform != null)
             {
-                _listBuilder.Append("► ").Append(objectiveTitle);
-                if (targetTransform != null)
+                Transform origin = playerTransform != null ? playerTransform : _cameraTransform;
+                if (origin != null)
                 {
-                    Transform origin = playerTransform != null ? playerTransform : _cameraTransform;
-                    if (origin != null)
-                    {
-                        int dist = Mathf.RoundToInt(Vector3.Distance(origin.position, targetTransform.position));
-                        _listBuilder.Append(" (").Append(dist).Append(" m)");
-                    }
-                }
-                _listBuilder.Append('\n');
-            }
-
-            if (_completedMissions.Count > 0)
-            {
-                _listBuilder.Append("\nSelesai:\n");
-                for (int i = 0; i < _completedMissions.Count; i++)
-                {
-                    _listBuilder.Append("✓ ").Append(_completedMissions[i]).Append('\n');
+                    int dist = Mathf.RoundToInt(Vector3.Distance(origin.position, targetTransform.position));
+                    _distText = $"{dist} m";
                 }
             }
-
-            _cachedListText = _listBuilder.ToString().TrimEnd('\n');
+            else
+            {
+                _distText = string.Empty;
+            }
         }
 
         private void OnGUI()
@@ -182,7 +173,7 @@ namespace PulauKabut.UI
 
             EnsureStyles();
 
-            // 1. Banner notifikasi misi baru (pill stylized auto-width, muncul sekali lalu memudar halus!)
+            // 1. Banner notifikasi misi baru (chamfered auto-width, muncul sekali lalu memudar halus!)
             if (_bannerTimer > 0f && !string.IsNullOrEmpty(_bannerText))
             {
                 float alpha = _bannerTimer < 0.8f ? Mathf.Clamp01(_bannerTimer / 0.8f) : 1f;
@@ -198,13 +189,48 @@ namespace PulauKabut.UI
                 GUI.color = prev;
             }
 
-            // 2. Panel Daftar Misi (hanya muncul jika dibuka dengan tombol J atau klik [J] Misi)
-            if (ShowMissionList && !string.IsNullOrEmpty(_cachedListText))
+            // 2. Panel DAFTAR MISI gaya Hud.dc.html (header emas + keycap [J] tutup + garis emas + berlian mint + badge jarak)
+            if (ShowMissionList)
             {
-                const float listW = 340f;
-                float listH = Mathf.Clamp(95f + _completedMissions.Count * 22f, 105f, 320f);
-                Rect listRect = new Rect(Screen.width - listW - 14f, 48f, listW, listH);
-                GUI.Box(listRect, _cachedListText, _listStyle);
+                const float listW = 320f;
+                float listH = Mathf.Clamp(118f + _completedMissions.Count * 24f, 118f, 340f);
+                Rect card = new Rect(Screen.width - listW - 14f, 56f, listW, listH);
+                GUI.Box(card, GUIContent.none, _listStyle);
+
+                // Header: DAFTAR MISI + [J] tutup
+                GUI.Label(new Rect(card.x + 18f, card.y + 12f, 180f, 26f), "DAFTAR MISI", _headerStyle);
+                GUI.Box(new Rect(card.xMax - 82f, card.y + 13f, 24f, 22f), "J", _keyStyle);
+                GUI.Label(new Rect(card.xMax - 54f, card.y + 13f, 44f, 22f), "tutup", _subLabelStyle);
+
+                // Garis pemisah emas tipis
+                Color prev = GUI.color;
+                GUI.color = StylizedUITheme.GoldAccent;
+                GUI.DrawTexture(new Rect(card.x + 18f, card.y + 42f, card.width - 36f, 2f), StylizedUITheme.SolidTex);
+
+                // Baris Misi Aktif: berlian mint berkedip + judul + badge jarak mint
+                float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 4f);
+                GUI.color = new Color(StylizedUITheme.MintAccent.r, StylizedUITheme.MintAccent.g, StylizedUITheme.MintAccent.b, 0.55f + 0.45f * pulse);
+                GUI.DrawTexture(new Rect(card.x + 18f, card.y + 58f, 14f, 14f), StylizedUITheme.DiamondTex);
+                GUI.color = prev;
+
+                float badgeW = string.IsNullOrEmpty(_distText) ? 0f : 56f;
+                GUI.Label(new Rect(card.x + 40f, card.y + 52f, card.width - 62f - badgeW, 44f), objectiveTitle, _missionTextStyle);
+
+                if (!string.IsNullOrEmpty(_distText))
+                {
+                    GUI.Box(new Rect(card.xMax - badgeW - 14f, card.y + 54f, badgeW, 26f), _distText, _distBadgeStyle);
+                }
+
+                // Riwayat Misi Selesai
+                if (_completedMissions.Count > 0)
+                {
+                    float y = card.y + 102f;
+                    for (int i = 0; i < _completedMissions.Count; i++)
+                    {
+                        GUI.Label(new Rect(card.x + 18f, y, card.width - 36f, 22f), "✓  " + _completedMissions[i], _doneTextStyle);
+                        y += 22f;
+                    }
+                }
             }
         }
 
@@ -212,14 +238,19 @@ namespace PulauKabut.UI
         {
             if (_bannerStyle == null)
             {
-                _bannerStyle = StylizedUITheme.CreatePillStyle(14, TextAnchor.MiddleCenter, 18, 8);
-                _bannerStyle.normal.textColor = new Color(1f, 0.96f, 0.80f);
+                _bannerStyle = StylizedUITheme.CreatePillStyle(15, TextAnchor.MiddleCenter, 18, 8);
+                _bannerStyle.normal.textColor = StylizedUITheme.GoldAccent;
             }
 
             if (_listStyle == null)
             {
                 _listStyle = StylizedUITheme.CreateGoldPanelStyle(13, TextAnchor.UpperLeft, 16, 12);
-                _listStyle.normal.textColor = StylizedUITheme.CreamText;
+                _headerStyle = StylizedUITheme.CreateHeadingLabelStyle(16, StylizedUITheme.GoldAccent, TextAnchor.MiddleLeft);
+                _keyStyle = StylizedUITheme.CreateKeycapStyle(12);
+                _subLabelStyle = StylizedUITheme.CreateBodyLabelStyle(12, StylizedUITheme.SeafoamText, TextAnchor.MiddleLeft);
+                _missionTextStyle = StylizedUITheme.CreateBodyLabelStyle(14, StylizedUITheme.CreamText, TextAnchor.UpperLeft, wordWrap: true);
+                _distBadgeStyle = StylizedUITheme.CreateMintBadgeStyle(12);
+                _doneTextStyle = StylizedUITheme.CreateBodyLabelStyle(12, StylizedUITheme.SeafoamText, TextAnchor.MiddleLeft);
             }
         }
     }
