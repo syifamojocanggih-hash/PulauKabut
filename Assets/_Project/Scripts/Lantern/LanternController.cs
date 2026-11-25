@@ -37,6 +37,24 @@ namespace PulauKabut.Lantern
         /// <summary>Intensitas ternormalisasi (0 = padam total, 1 = menyala penuh).</summary>
         public float NormalizedIntensity { get; private set; }
 
+        /// <summary>Sisa daya lentera ternormalisasi (0 = habis, 1 = penuh).</summary>
+        public float ChargeNormalized { get; private set; } = 1f;
+
+        /// <summary>Sisa durasi nyala lentera dalam detik.</summary>
+        public float RemainingSeconds => settings != null ? ChargeNormalized * settings.MaxChargeDuration : 0f;
+
+        /// <summary>True jika batas durasi nyala lentera aktif.</summary>
+        public bool HasDurationLimit => settings != null && settings.EnableDurationLimit;
+
+        /// <summary>True jika lentera sedang mengisi daya saat padam.</summary>
+        public bool IsRecharging { get; private set; }
+
+        /// <summary>True jika daya cukup untuk menyalakan lentera kembali.</summary>
+        public bool CanRelight => settings == null || !settings.EnableDurationLimit || ChargeNormalized >= settings.MinChargeToRelight;
+
+        /// <summary>True jika daya lentera berada di ambang rendah.</summary>
+        public bool IsLowCharge => HasDurationLimit && ChargeNormalized <= settings.LowChargeFlickerThreshold;
+
         /// <summary>Radius efektif pengungkap bayangan saat ini dalam meter.</summary>
         public float CurrentRevealRadius => settings != null ? settings.RevealRadius * NormalizedIntensity : 0f;
 
@@ -46,8 +64,13 @@ namespace PulauKabut.Lantern
         /// <summary>Event dipicu saat status nyala/padam lentera berubah (untuk Audio SFX & UI).</summary>
         public event Action<bool> OnLanternToggled;
 
+        /// <summary>Event dipicu saat daya lentera habis total dan padam otomatis.</summary>
+        public event Action OnLanternDepleted;
+
         private PlayerInputActions _input;
         private MaterialPropertyBlock _corePropBlock;
+        private float _rechargeDelayTimer;
+        private float _flickerMultiplier = 1f;
 
         private void Awake()
         {
@@ -61,6 +84,11 @@ namespace PulauKabut.Lantern
             ActiveLantern = this;
             _input = new PlayerInputActions();
             _corePropBlock = new MaterialPropertyBlock();
+
+            ChargeNormalized = 1f;
+            IsRecharging = false;
+            _rechargeDelayTimer = 0f;
+            _flickerMultiplier = 1f;
 
             IsLit = settings.StartLit;
             NormalizedIntensity = IsLit ? 1f : 0f;
@@ -102,6 +130,8 @@ namespace PulauKabut.Lantern
                 return;
             }
 
+            _input ??= new PlayerInputActions();
+
             // Baca tombol Lantern (F / Gamepad Y) tanpa alokasi memori
             if (_input.Player.Lantern.WasPressedThisFrame())
             {
@@ -109,6 +139,7 @@ namespace PulauKabut.Lantern
             }
 
             float dt = Time.deltaTime;
+            UpdateLanternCharge(dt);
             UpdateLanternIntensity(dt);
             UpdateSceneFog(dt);
             PushShaderGlobals();
@@ -128,8 +159,91 @@ namespace PulauKabut.Lantern
                 return;
             }
 
+            if (lit && !CanRelight)
+            {
+                return;
+            }
+
             IsLit = lit;
+            if (!IsLit)
+            {
+                _rechargeDelayTimer = settings != null ? settings.RechargeDelay : 1f;
+                IsRecharging = false;
+            }
+
             OnLanternToggled?.Invoke(IsLit);
+        }
+
+        /// <summary>Mengisi ulang daya lentera secara instan (misal saat menyentuh Checkpoint / Altar).</summary>
+        public void RefillCharge(float normalizedAmount = 1f)
+        {
+            ChargeNormalized = Mathf.Clamp01(ChargeNormalized + normalizedAmount);
+            if (ChargeNormalized >= 1f)
+            {
+                IsRecharging = false;
+            }
+        }
+
+        private void UpdateLanternCharge(float dt)
+        {
+            if (!settings.EnableDurationLimit)
+            {
+                ChargeNormalized = 1f;
+                IsRecharging = false;
+                _flickerMultiplier = 1f;
+                return;
+            }
+
+            if (IsLit)
+            {
+                IsRecharging = false;
+                float drainRate = 1f / Mathf.Max(0.1f, settings.MaxChargeDuration);
+                ChargeNormalized = Mathf.Max(0f, ChargeNormalized - drainRate * dt);
+
+                if (ChargeNormalized <= settings.LowChargeFlickerThreshold && ChargeNormalized > 0f)
+                {
+                    // Kedipan halus saat daya hampir habis sebagai peringatan visual
+                    float pulse = Mathf.Sin(Time.time * 24f) * 0.5f + 0.5f;
+                    _flickerMultiplier = Mathf.Lerp(0.68f, 1f, pulse);
+                }
+                else
+                {
+                    _flickerMultiplier = 1f;
+                }
+
+                if (ChargeNormalized <= 0f)
+                {
+                    _flickerMultiplier = 1f;
+                    SetLit(false);
+                    OnLanternDepleted?.Invoke();
+                }
+            }
+            else
+            {
+                _flickerMultiplier = 1f;
+                if (ChargeNormalized < 1f)
+                {
+                    if (_rechargeDelayTimer > 0f)
+                    {
+                        _rechargeDelayTimer = Mathf.Max(0f, _rechargeDelayTimer - dt);
+                        IsRecharging = false;
+                    }
+                    else
+                    {
+                        IsRecharging = true;
+                        float rechargeRate = 1f / Mathf.Max(0.1f, settings.RechargeDuration);
+                        ChargeNormalized = Mathf.Min(1f, ChargeNormalized + rechargeRate * dt);
+                        if (ChargeNormalized >= 1f)
+                        {
+                            IsRecharging = false;
+                        }
+                    }
+                }
+                else
+                {
+                    IsRecharging = false;
+                }
+            }
         }
 
         private void UpdateLanternIntensity(float dt)
@@ -143,19 +257,23 @@ namespace PulauKabut.Lantern
 
         private void ApplyLightImmediate()
         {
+            float effectiveIntensity = NormalizedIntensity * _flickerMultiplier;
+
             if (lanternLight != null)
             {
                 lanternLight.color = settings.LightColor;
                 lanternLight.range = settings.LightRange;
-                lanternLight.intensity = settings.LightIntensity * NormalizedIntensity;
-                lanternLight.enabled = NormalizedIntensity > 0.01f;
+                lanternLight.intensity = settings.LightIntensity * effectiveIntensity;
+                lanternLight.enabled = effectiveIntensity > 0.01f;
             }
 
             if (lanternCoreRenderer != null)
             {
+                _corePropBlock ??= new MaterialPropertyBlock();
+
                 // Gunakan MaterialPropertyBlock agar tidak membuat instance material baru di memori
                 lanternCoreRenderer.GetPropertyBlock(_corePropBlock);
-                Color emissive = settings.LightColor * (NormalizedIntensity * 2.2f);
+                Color emissive = settings.LightColor * (effectiveIntensity * 2.2f);
                 _corePropBlock.SetColor(EmissionColorShaderId, emissive);
                 lanternCoreRenderer.SetPropertyBlock(_corePropBlock);
             }
@@ -170,8 +288,8 @@ namespace PulauKabut.Lantern
 
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogStartDistance = IsLit ? settings.LitFogStart : settings.UnlitFogStart;
-            RenderSettings.fogEndDistance = IsLit ? settings.LitFogEnd : settings.UnlitFogEnd;
+            RenderSettings.fogStartDistance = Mathf.Lerp(settings.UnlitFogStart, settings.LitFogStart, NormalizedIntensity);
+            RenderSettings.fogEndDistance = Mathf.Lerp(settings.UnlitFogEnd, settings.LitFogEnd, NormalizedIntensity);
         }
 
         private void UpdateSceneFog(float dt)
@@ -181,8 +299,9 @@ namespace PulauKabut.Lantern
                 return;
             }
 
-            float targetStart = IsLit ? settings.LitFogStart : settings.UnlitFogStart;
-            float targetEnd = IsLit ? settings.LitFogEnd : settings.UnlitFogEnd;
+            float fogFactor = NormalizedIntensity * Mathf.Lerp(0.88f, 1f, _flickerMultiplier);
+            float targetStart = Mathf.Lerp(settings.UnlitFogStart, settings.LitFogStart, fogFactor);
+            float targetEnd = Mathf.Lerp(settings.UnlitFogEnd, settings.LitFogEnd, fogFactor);
             float t = 1f - Mathf.Exp(-settings.FogTransitionSpeed * dt);
 
             RenderSettings.fogStartDistance = Mathf.Lerp(RenderSettings.fogStartDistance, targetStart, t);
