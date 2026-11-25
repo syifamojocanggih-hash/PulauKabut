@@ -31,9 +31,12 @@ namespace PulauKabut.UI
         private readonly List<Transform> _shards = new List<Transform>(12);
         private readonly List<Transform> _braziers = new List<Transform>(8);
 
+        private Transform _visualsTransform;
+        private Transform _cameraTransform;
         private Texture2D _circleBgTex;
         private Texture2D _dotTex;
         private Texture2D _arrowTex;
+        private Texture2D _coneTex;
         private GUIStyle _compassStyle;
 
         private void Start()
@@ -42,6 +45,16 @@ namespace PulauKabut.UI
             {
                 var pc = FindAnyObjectByType<Player.PlayerController>();
                 if (pc != null) playerTransform = pc.transform;
+            }
+
+            if (playerTransform != null)
+            {
+                _visualsTransform = playerTransform.Find("Visuals");
+            }
+
+            if (Camera.main != null)
+            {
+                _cameraTransform = Camera.main.transform;
             }
 
             // Cache semua penanda sekali saja saat Start (nol FindObjectOfType di Update!)
@@ -66,6 +79,7 @@ namespace PulauKabut.UI
             if (_circleBgTex != null) Destroy(_circleBgTex);
             if (_dotTex != null) Destroy(_dotTex);
             if (_arrowTex != null) Destroy(_arrowTex);
+            if (_coneTex != null) Destroy(_coneTex);
         }
 
         private void OnGUI()
@@ -123,17 +137,37 @@ namespace PulauKabut.UI
                     clampToEdge: true);
             }
 
-            // 6. Panah Arah Pemain di tengah lingkaran (berputar sesuai arah hadap pemain)
+            // 6. Sorotan kerucut pandang / cahaya senter mengikuti arah kamera (melebar emas saat Lentera menyala!)
+            if (_cameraTransform == null && Camera.main != null)
+            {
+                _cameraTransform = Camera.main.transform;
+            }
+
+            float camYaw = _cameraTransform != null ? _cameraTransform.eulerAngles.y : playerTransform.eulerAngles.y;
+            float charYaw = _visualsTransform != null ? _visualsTransform.eulerAngles.y : camYaw;
+
+            bool isLanternLit = LanternController.ActiveLantern != null && LanternController.ActiveLantern.IsLit;
+            float coneSize = isLanternLit ? (innerRadius * 1.85f) : (innerRadius * 1.25f);
+            Color coneColor = isLanternLit
+                ? new Color(1f, 0.86f, 0.42f, 0.42f)
+                : new Color(0.75f, 0.90f, 1f, 0.24f);
+
             Matrix4x4 prevMatrix = GUI.matrix;
-            float yaw = playerTransform.eulerAngles.y;
-            GUIUtility.RotateAroundPivot(yaw, center);
             Color prevColor = GUI.color;
+
+            GUIUtility.RotateAroundPivot(camYaw, center);
+            GUI.color = coneColor;
+            GUI.DrawTexture(new Rect(center.x - coneSize * 0.5f, center.y - coneSize * 0.5f, coneSize, coneSize), _coneTex);
+            GUI.matrix = prevMatrix;
+
+            // 7. Panah Arah Karakter di tengah lingkaran (berputar halus mengikuti arah hadap karakter!)
+            GUIUtility.RotateAroundPivot(charYaw, center);
             GUI.color = Color.white;
             GUI.DrawTexture(new Rect(center.x - 8f, center.y - 8f, 16f, 16f), _arrowTex);
             GUI.color = prevColor;
             GUI.matrix = prevMatrix;
 
-            // 7. Penanda arah Utara ("U") di puncak bingkai lingkaran
+            // 8. Penanda arah Utara ("U") di puncak bingkai lingkaran
             GUI.Label(new Rect(center.x - 10f, mapRect.y + 3f, 20f, 16f), "U", _compassStyle);
         }
 
@@ -246,6 +280,50 @@ namespace PulauKabut.UI
                 }
                 _arrowTex.SetPixels(pixels);
                 _arrowTex.Apply();
+            }
+
+            if (_coneTex == null)
+            {
+                const int cSize = 128;
+                _coneTex = new Texture2D(cSize, cSize, TextureFormat.RGBA32, false)
+                {
+                    wrapMode = TextureWrapMode.Clamp,
+                    filterMode = FilterMode.Bilinear
+                };
+                float half = cSize * 0.5f;
+                float maxR = half - 2f;
+                const float halfConeRad = 34f * Mathf.Deg2Rad; // Lebar sorotan senter ~68 derajat
+
+                Color[] pixels = new Color[cSize * cSize];
+                for (int y = 0; y < cSize; y++)
+                {
+                    for (int x = 0; x < cSize; x++)
+                    {
+                        float dx = (x + 0.5f) - half;
+                        float dy = (y + 0.5f) - half; // dy > 0 = atas (arah pandang depan)
+                        float r = Mathf.Sqrt(dx * dx + dy * dy);
+
+                        if (dy <= 0f || r < 3f || r > maxR)
+                        {
+                            pixels[y * cSize + x] = Color.clear;
+                            continue;
+                        }
+
+                        float angle = Mathf.Atan2(Mathf.Abs(dx), dy);
+                        if (angle > halfConeRad)
+                        {
+                            pixels[y * cSize + x] = Color.clear;
+                            continue;
+                        }
+
+                        // Gradasi halus: terang di dekat pemain, memudar ke tepi & ujung kerucut
+                        float radialFade = Mathf.Pow(1f - (r / maxR), 1.35f);
+                        float edgeFade = Mathf.Clamp01((halfConeRad - angle) / (7f * Mathf.Deg2Rad));
+                        pixels[y * cSize + x] = new Color(1f, 1f, 1f, radialFade * edgeFade);
+                    }
+                }
+                _coneTex.SetPixels(pixels);
+                _coneTex.Apply();
             }
 
             if (_compassStyle == null)
