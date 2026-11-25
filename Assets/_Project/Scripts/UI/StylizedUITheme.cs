@@ -19,6 +19,232 @@ namespace PulauKabut.UI
         private static Texture2D _mintPanelTex;
         private static Texture2D _goldKeycapTex;
         private static Texture2D _mintBadgeTex;
+        private static Texture2D _diamondTex;
+        private static Texture2D _solidTex;
+        private static Texture2D _slantSegTex;
+        private static Texture2D _lanternIconTex;
+        private static Texture2D _pentagonIconTex;
+        private static Texture2D _hexagonIconTex;
+        private static Texture2D _houseIconTex;
+        private static Font _headingFont;
+        private static Font _bodyFont;
+        private static bool _fontsLoaded;
+
+        /// <summary>Font Baloo 2 ExtraBold untuk judul, angka, nameplate, dan keycap (persis HUD Lengkap).</summary>
+        public static Font HeadingFont
+        {
+            get
+            {
+                EnsureFonts();
+                return _headingFont;
+            }
+        }
+
+        /// <summary>Font Nunito Bold untuk isi chat/dialog, misi, kontrol, dan label tombol (persis HUD Lengkap).</summary>
+        public static Font BodyFont
+        {
+            get
+            {
+                EnsureFonts();
+                return _bodyFont;
+            }
+        }
+
+        public static Texture2D SolidTex
+        {
+            get
+            {
+                if (_solidTex == null)
+                {
+                    _solidTex = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+                    _solidTex.SetPixel(0, 0, Color.white);
+                    _solidTex.Apply();
+                }
+                return _solidTex;
+            }
+        }
+
+        public static Texture2D DiamondTex
+        {
+            get
+            {
+                if (_diamondTex == null)
+                {
+                    const int s = 20;
+                    float h = s * 0.5f;
+                    _diamondTex = new Texture2D(s, s, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
+                    Color[] px = new Color[s * s];
+                    for (int y = 0; y < s; y++)
+                    {
+                        for (int x = 0; x < s; x++)
+                        {
+                            float d = Mathf.Abs(x + 0.5f - h) + Mathf.Abs(y + 0.5f - h);
+                            float a = Mathf.Clamp01((h - 1.5f) - d);
+                            px[y * s + x] = new Color(1f, 1f, 1f, a);
+                        }
+                    }
+                    _diamondTex.SetPixels(px);
+                    _diamondTex.Apply();
+                }
+                return _diamondTex;
+            }
+        }
+
+        /// <summary>Segmen bar jajar genjang miring (12 segmen bar Lentera persis Hud.dc.html).</summary>
+        public static Texture2D SlantSegTex
+        {
+            get
+            {
+                if (_slantSegTex == null)
+                {
+                    const int w = 24;
+                    const int h = 18;
+                    _slantSegTex = new Texture2D(w, h, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
+                    Color[] px = new Color[w * h];
+                    for (int y = 0; y < h; y++)
+                    {
+                        float v = y / (float)(h - 1);
+                        float shift = v * 5.0f; // miring ke kanan atas
+                        for (int x = 0; x < w; x++)
+                        {
+                            float lx = x - shift;
+                            bool inside = lx >= 1.5f && lx <= (w - 6.5f) && y >= 1 && y <= h - 2;
+                            if (!inside)
+                            {
+                                px[y * w + x] = Color.clear;
+                            }
+                            else
+                            {
+                                // Gradasi lembut terang di atas -> sedikit lebih hangat di bawah
+                                float bright = Mathf.Lerp(0.84f, 1.0f, v);
+                                px[y * w + x] = new Color(bright, bright, bright, 1f);
+                            }
+                        }
+                    }
+                    _slantSegTex.SetPixels(px);
+                    _slantSegTex.Apply();
+                }
+                return _slantSegTex;
+            }
+        }
+
+        /// <summary>Ikon Lentera kristal bercahaya (persis Hud.dc.html).</summary>
+        public static Texture2D LanternIconTex
+        {
+            get
+            {
+                if (_lanternIconTex == null)
+                {
+                    const int s = 32;
+                    _lanternIconTex = new Texture2D(s, s, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
+                    Color[] px = new Color[s * s];
+                    Color capCol = new Color(0.54f, 0.33f, 0.14f, 1f);
+                    Color bodyCol = new Color(1.00f, 0.84f, 0.38f, 1f);
+                    Color coreCol = new Color(1.00f, 0.98f, 0.88f, 1f);
+                    for (int y = 0; y < s; y++)
+                    {
+                        float ny = y / (float)(s - 1); // 0 bawah, 1 atas
+                        for (int x = 0; x < s; x++)
+                        {
+                            float nx = (x / (float)(s - 1)) * 2f - 1f; // -1..1
+                            // Tutup kayu di atas (0.82..0.96)
+                            if (ny >= 0.82f && ny <= 0.96f && Mathf.Abs(nx) <= 0.28f)
+                            {
+                                px[y * s + x] = capCol;
+                            }
+                            else if (ny >= 0.08f && ny < 0.84f)
+                            {
+                                float maxW = ny > 0.56f
+                                    ? Mathf.Lerp(0.62f, 0.42f, (ny - 0.56f) / 0.28f)
+                                    : Mathf.Lerp(0.04f, 0.62f, (ny - 0.08f) / 0.48f);
+                                if (Mathf.Abs(nx) <= maxW)
+                                {
+                                    bool core = ny > 0.30f && ny < 0.66f && Mathf.Abs(nx) <= maxW * 0.34f;
+                                    px[y * s + x] = core ? coreCol : bodyCol;
+                                }
+                                else px[y * s + x] = Color.clear;
+                            }
+                            else px[y * s + x] = Color.clear;
+                        }
+                    }
+                    _lanternIconTex.SetPixels(px);
+                    _lanternIconTex.Apply();
+                }
+                return _lanternIconTex;
+            }
+        }
+
+        /// <summary>Ikon kristal segilima mint untuk Pecahan Cahaya.</summary>
+        public static Texture2D PentagonIconTex => _pentagonIconTex != null ? _pentagonIconTex : (_pentagonIconTex = CreatePolygonIcon(5, MintAccent));
+
+        /// <summary>Ikon segienam emas untuk Serpihan Ingatan.</summary>
+        public static Texture2D HexagonIconTex => _hexagonIconTex != null ? _hexagonIconTex : (_hexagonIconTex = CreatePolygonIcon(6, GoldAccent));
+
+        /// <summary>Ikon rumah krem untuk Desa Pelita.</summary>
+        public static Texture2D HouseIconTex
+        {
+            get
+            {
+                if (_houseIconTex == null)
+                {
+                    const int s = 28;
+                    _houseIconTex = new Texture2D(s, s, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
+                    Color[] px = new Color[s * s];
+                    for (int y = 0; y < s; y++)
+                    {
+                        float ny = y / (float)(s - 1);
+                        for (int x = 0; x < s; x++)
+                        {
+                            float nx = Mathf.Abs((x / (float)(s - 1)) * 2f - 1f);
+                            bool roof = ny >= 0.48f && ny <= 0.94f && nx <= (0.94f - ny) * 1.95f;
+                            bool body = ny >= 0.08f && ny < 0.52f && nx <= 0.58f;
+                            px[y * s + x] = (roof || body) ? CreamText : Color.clear;
+                        }
+                    }
+                    _houseIconTex.SetPixels(px);
+                    _houseIconTex.Apply();
+                }
+                return _houseIconTex;
+            }
+        }
+
+        private static Texture2D CreatePolygonIcon(int sides, Color col)
+        {
+            const int s = 28;
+            float half = s * 0.5f;
+            float rad = half - 2.5f;
+            Texture2D tex = new Texture2D(s, s, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
+            Color[] px = new Color[s * s];
+            float step = Mathf.PI * 2f / sides;
+            for (int y = 0; y < s; y++)
+            {
+                for (int x = 0; x < s; x++)
+                {
+                    float dx = (x + 0.5f) - half;
+                    float dy = (y + 0.5f) - half;
+                    float ang = Mathf.Atan2(dx, dy);
+                    if (ang < 0f) ang += Mathf.PI * 2f;
+                    float sector = (ang % step) - step * 0.5f;
+                    float maxR = rad * Mathf.Cos(step * 0.5f) / Mathf.Cos(sector);
+                    float r = Mathf.Sqrt(dx * dx + dy * dy);
+                    float a = Mathf.Clamp01(maxR - r);
+                    px[y * s + x] = new Color(col.r, col.g, col.b, col.a * a);
+                }
+            }
+            tex.SetPixels(px);
+            tex.Apply();
+            return tex;
+        }
+
+        private static void EnsureFonts()
+        {
+            if (_fontsLoaded && _headingFont != null && _bodyFont != null) return;
+            _headingFont = Resources.Load<Font>("Fonts/Baloo2-Bold");
+            _bodyFont = Resources.Load<Font>("Fonts/Nunito-Bold");
+            if (_bodyFont == null) _bodyFont = _headingFont;
+            if (_headingFont == null) _headingFont = _bodyFont;
+            _fontsLoaded = _headingFont != null && _bodyFont != null;
+        }
 
         public static Texture2D GoldPanelTex => _goldPanelTex != null ? _goldPanelTex : (_goldPanelTex = CreateChamferTexture(
             64, 48, 12, 5, 2.4f,
@@ -59,6 +285,7 @@ namespace PulauKabut.UI
         {
             GUIStyle s = new GUIStyle(GUI.skin.box)
             {
+                font = BodyFont,
                 alignment = alignment,
                 fontSize = fontSize,
                 fontStyle = FontStyle.Bold,
@@ -75,6 +302,7 @@ namespace PulauKabut.UI
         {
             GUIStyle s = new GUIStyle(GUI.skin.box)
             {
+                font = BodyFont,
                 alignment = alignment,
                 fontSize = fontSize,
                 fontStyle = FontStyle.Bold,
@@ -87,10 +315,11 @@ namespace PulauKabut.UI
             return s;
         }
 
-        public static GUIStyle CreatePillStyle(int fontSize = 13, TextAnchor alignment = TextAnchor.MiddleCenter, int padH = 14, int padV = 6)
+        public static GUIStyle CreatePillStyle(int fontSize = 14, TextAnchor alignment = TextAnchor.MiddleCenter, int padH = 14, int padV = 6)
         {
             GUIStyle s = new GUIStyle(GUI.skin.button)
             {
+                font = BodyFont,
                 alignment = alignment,
                 fontSize = fontSize,
                 fontStyle = FontStyle.Bold,
@@ -112,6 +341,7 @@ namespace PulauKabut.UI
         {
             GUIStyle s = new GUIStyle(GUI.skin.box)
             {
+                font = HeadingFont,
                 alignment = TextAnchor.MiddleCenter,
                 fontSize = fontSize,
                 fontStyle = FontStyle.Bold,
@@ -127,6 +357,7 @@ namespace PulauKabut.UI
         {
             GUIStyle s = new GUIStyle(GUI.skin.box)
             {
+                font = HeadingFont,
                 alignment = TextAnchor.MiddleCenter,
                 fontSize = fontSize,
                 fontStyle = FontStyle.Bold,
@@ -135,6 +366,33 @@ namespace PulauKabut.UI
             };
             s.normal.background = MintBadgeTex;
             s.normal.textColor = new Color(0.047f, 0.133f, 0.161f, 1f);
+            return s;
+        }
+
+        public static GUIStyle CreateHeadingLabelStyle(int fontSize, Color color, TextAnchor alignment = TextAnchor.MiddleLeft)
+        {
+            GUIStyle s = new GUIStyle(GUI.skin.label)
+            {
+                font = HeadingFont,
+                fontSize = fontSize,
+                fontStyle = FontStyle.Bold,
+                alignment = alignment
+            };
+            s.normal.textColor = color;
+            return s;
+        }
+
+        public static GUIStyle CreateBodyLabelStyle(int fontSize, Color color, TextAnchor alignment = TextAnchor.MiddleLeft, bool wordWrap = false)
+        {
+            GUIStyle s = new GUIStyle(GUI.skin.label)
+            {
+                font = BodyFont,
+                fontSize = fontSize,
+                fontStyle = FontStyle.Bold,
+                alignment = alignment,
+                wordWrap = wordWrap
+            };
+            s.normal.textColor = color;
             return s;
         }
 

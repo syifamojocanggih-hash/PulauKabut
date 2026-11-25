@@ -143,30 +143,36 @@ namespace PulauKabut.Dialog
             GUI.Label(new Rect(bodyRect.x + 1f, bodyRect.y + 2f, bodyRect.width, bodyRect.height), lineText, _bodyShadowStyle);
             GUI.Label(bodyRect, lineText, _bodyStyle);
 
-            // Indikator halaman baris (kiri bawah) + tombol aksi [E] atau [SPASI] Lanjut ▶ (kanan bawah)
-            string pageText = $"{_currentLineIndex + 1} / {_currentData.Lines.Length}";
-            GUI.Label(new Rect(panel.x + 28f, panel.yMax - 36f, 80f, 24f), pageText, _footerLabelStyle);
+            // 4 ikon berlian mint berkedip lembut di kiri bawah (persis Hud.dc.html!)
+            Color prevCol = GUI.color;
+            for (int i = 0; i < 4; i++)
+            {
+                float a = 0.45f + 0.55f * (0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 2.6f - i * 0.55f));
+                GUI.color = new Color(StylizedUITheme.MintAccent.r, StylizedUITheme.MintAccent.g, StylizedUITheme.MintAccent.b, a);
+                GUI.DrawTexture(new Rect(panel.x + 28f + i * 22f, panel.yMax - 36f, 14f, 18f), StylizedUITheme.DiamondTex);
+            }
+            GUI.color = prevCol;
 
             bool isLast = _currentLineIndex >= _currentData.Lines.Length - 1;
             string actionLabel = isLast ? "Selesai" : "Lanjut";
             float rightEdge = panel.xMax - 24f;
-            float btnY = panel.yMax - 40f;
+            float btnY = panel.yMax - 42f;
 
             // Panah mint memantul halus di ujung kanan
             float bounce = Mathf.Sin(Time.unscaledTime * 5.5f) * 3f;
             Rect arrowRect = new Rect(rightEdge - 16f + bounce, btnY + 3f, 18f, 24f);
             GUI.Label(arrowRect, "►", _arrowStyle);
 
-            Rect actRect = new Rect(rightEdge - 78f, btnY + 2f, 60f, 26f);
+            Rect actRect = new Rect(rightEdge - 82f, btnY + 2f, 64f, 26f);
             GUI.Label(actRect, actionLabel, _footerLabelStyle);
 
-            Rect spaceRect = new Rect(actRect.x - 64f, btnY + 2f, 56f, 24f);
+            Rect spaceRect = new Rect(actRect.x - 66f, btnY + 2f, 58f, 25f);
             GUI.Box(spaceRect, "SPASI", _keycapStyle);
 
-            Rect orRect = new Rect(spaceRect.x - 36f, btnY + 2f, 34f, 24f);
+            Rect orRect = new Rect(spaceRect.x - 38f, btnY + 2f, 36f, 25f);
             GUI.Label(orRect, "atau", _footerLabelStyle);
 
-            Rect eRect = new Rect(orRect.x - 32f, btnY + 2f, 28f, 24f);
+            Rect eRect = new Rect(orRect.x - 32f, btnY + 2f, 28f, 25f);
             GUI.Box(eRect, "E", _keycapStyle);
         }
 
@@ -175,36 +181,14 @@ namespace PulauKabut.Dialog
             if (_panelStyle != null) return;
 
             _panelStyle = StylizedUITheme.CreateGoldPanelStyle(14, TextAnchor.UpperLeft, 18, 14);
-            _nameplateStyle = StylizedUITheme.CreateKeycapStyle(15);
+            _nameplateStyle = StylizedUITheme.CreateKeycapStyle(16);
 
-            _bodyStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 17,
-                fontStyle = FontStyle.Bold,
-                wordWrap = true
-            };
-            _bodyStyle.normal.textColor = StylizedUITheme.CreamText;
+            _bodyStyle = StylizedUITheme.CreateBodyLabelStyle(18, StylizedUITheme.CreamText, TextAnchor.UpperLeft, wordWrap: true);
+            _bodyShadowStyle = StylizedUITheme.CreateBodyLabelStyle(18, new Color(0.03f, 0.08f, 0.10f, 0.85f), TextAnchor.UpperLeft, wordWrap: true);
 
-            _bodyShadowStyle = new GUIStyle(_bodyStyle);
-            _bodyShadowStyle.normal.textColor = new Color(0.03f, 0.08f, 0.10f, 0.85f);
-
-            _keycapStyle = StylizedUITheme.CreateKeycapStyle(12);
-
-            _footerLabelStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 13,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter
-            };
-            _footerLabelStyle.normal.textColor = StylizedUITheme.SeafoamText;
-
-            _arrowStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 14,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter
-            };
-            _arrowStyle.normal.textColor = StylizedUITheme.MintAccent;
+            _keycapStyle = StylizedUITheme.CreateKeycapStyle(13);
+            _footerLabelStyle = StylizedUITheme.CreateBodyLabelStyle(14, StylizedUITheme.SeafoamText, TextAnchor.MiddleCenter);
+            _arrowStyle = StylizedUITheme.CreateHeadingLabelStyle(15, StylizedUITheme.MintAccent, TextAnchor.MiddleCenter);
         }
     }
 }

@@ -31,6 +31,13 @@ namespace PulauKabut.Lantern
         [Tooltip("Renderer inti lampu lentera untuk efek pendar emissive (opsional).")]
         [SerializeField] private Renderer lanternCoreRenderer;
 
+        [Header("Status Kepemilikan")]
+        [Tooltip("Jika false, pemain belum punya lentera di awal dan baru mendapatkannya setelah bicara dengan Mbah Sauh.")]
+        [SerializeField] private bool hasLanternOnStart = false;
+
+        /// <summary>True jika pemain sudah memiliki lentera (diberikan oleh Mbah Sauh).</summary>
+        public bool HasLantern { get; private set; }
+
         /// <summary>True jika lentera saat ini sedang dinyalakan.</summary>
         public bool IsLit { get; private set; }
 
@@ -90,7 +97,13 @@ namespace PulauKabut.Lantern
             _rechargeDelayTimer = 0f;
             _flickerMultiplier = 1f;
 
-            IsLit = settings.StartLit;
+            HasLantern = hasLanternOnStart;
+            if (lanternPoint != null)
+            {
+                lanternPoint.gameObject.SetActive(HasLantern);
+            }
+
+            IsLit = HasLantern && settings.StartLit;
             NormalizedIntensity = IsLit ? 1f : 0f;
 
             ApplyLightImmediate();
@@ -132,8 +145,8 @@ namespace PulauKabut.Lantern
 
             _input ??= new PlayerInputActions();
 
-            // Baca tombol Lantern (F / Gamepad Y) tanpa alokasi memori
-            if (_input.Player.Lantern.WasPressedThisFrame())
+            // Baca tombol Lantern (F / Gamepad Y) hanya jika pemain sudah punya lentera
+            if (HasLantern && _input.Player.Lantern.WasPressedThisFrame())
             {
                 ToggleLantern();
             }
@@ -145,15 +158,36 @@ namespace PulauKabut.Lantern
             PushShaderGlobals();
         }
 
+        /// <summary>Memberikan lentera kepada pemain (dipanggil saat selesai bicara dengan Mbah Sauh).</summary>
+        public void GrantLantern(bool turnOnImmediately = false)
+        {
+            if (HasLantern) return;
+            HasLantern = true;
+            ChargeNormalized = 1f;
+            IsRecharging = false;
+            if (lanternPoint != null)
+            {
+                lanternPoint.gameObject.SetActive(true);
+            }
+            if (turnOnImmediately)
+            {
+                SetLit(true);
+            }
+            ApplyLightImmediate();
+            Core.SaveLoadBridge.Instance?.SaveNow();
+        }
+
         /// <summary>Menyalakan atau memadamkan lentera.</summary>
         public void ToggleLantern()
         {
+            if (!HasLantern) return;
             SetLit(!IsLit);
         }
 
         /// <summary>Mengatur status lentera secara langsung (berguna untuk event cerita/dialog).</summary>
         public void SetLit(bool lit)
         {
+            if (lit && !HasLantern) return;
             if (IsLit == lit)
             {
                 return;

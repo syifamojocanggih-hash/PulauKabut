@@ -156,20 +156,12 @@ namespace PulauKabut.Player
 
             if (_labelStyle == null)
             {
-                _labelStyle = new GUIStyle(GUI.skin.label)
-                {
-                    alignment = TextAnchor.MiddleLeft,
-                    fontSize = 15,
-                    fontStyle = FontStyle.Bold,
-                    wordWrap = false
-                };
-                _labelStyle.normal.textColor = StylizedUITheme.CreamText;
+                _labelStyle = StylizedUITheme.CreateBodyLabelStyle(15, StylizedUITheme.CreamText, TextAnchor.MiddleLeft);
             }
 
             if (_shadowLabelStyle == null)
             {
-                _shadowLabelStyle = new GUIStyle(_labelStyle);
-                _shadowLabelStyle.normal.textColor = new Color(0.03f, 0.08f, 0.10f, 0.88f);
+                _shadowLabelStyle = StylizedUITheme.CreateBodyLabelStyle(15, new Color(0.03f, 0.08f, 0.10f, 0.88f), TextAnchor.MiddleLeft);
             }
         }
 

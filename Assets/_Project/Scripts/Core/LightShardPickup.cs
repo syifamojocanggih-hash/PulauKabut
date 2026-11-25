@@ -41,6 +41,7 @@ namespace PulauKabut.Core
         private Vector3 _basePosition;
         private bool _collected;
 
+        public string CollectibleId => collectibleId;
         public string PromptText => promptText;
         public bool CanInteract => !_collected;
 
