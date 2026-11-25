@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ae8c286c6b64b548ad5fb25a41da078, type: 3}
+  m_Name: Dialog_ZM_KakekUjang
+  m_EditorClassIdentifier: Assembly-CSharp::PulauKabut.Dialog.DialogData
+  speakerName: Kakek Ujang
+  lines:
+  - "Hati-hati melangkah di Rawa Kunang, Nak. Air rawanya dalam \u2014 jangan sampai jatuh dari pijakan akar!"
+  - Kalau daya lenteramu hampir habis, singgahlah di Tungku Pelita yang menyala untuk mengisi ulang.
+  - Oh ya, perahu pertamaku dulu tertinggal di dekat air terjun timur... semoga suatu hari kau menemukannya.
