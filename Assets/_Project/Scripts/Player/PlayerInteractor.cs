@@ -1,5 +1,6 @@
 using PulauKabut.Core;
 using PulauKabut.Dialog;
+using PulauKabut.UI;
 using UnityEngine;
 
 namespace PulauKabut.Player
@@ -21,9 +22,13 @@ namespace PulauKabut.Player
         [SerializeField] private LayerMask interactMask = ~0;
 
         private readonly Collider[] _hitBuffer = new Collider[MaxHits];
+        private readonly GUIContent _promptContent = new GUIContent();
         private PlayerInputActions _input;
         private IInteractable _currentTarget;
-        private GUIStyle _promptStyle;
+        private GUIStyle _pillStyle;
+        private GUIStyle _badgeTextStyle;
+        private GUIStyle _labelStyle;
+        private GUIStyle _shadowLabelStyle;
 
         /// <summary>Objek interaktif terdekat yang sedang disorot pemain.</summary>
         public IInteractable CurrentTarget => _currentTarget;
@@ -105,22 +110,74 @@ namespace PulauKabut.Player
                 return;
             }
 
-            if (_promptStyle == null)
+            EnsureStyles();
+
+            string promptText = _currentTarget.PromptText;
+            if (string.IsNullOrEmpty(promptText))
             {
-                _promptStyle = new GUIStyle(GUI.skin.box)
-                {
-                    alignment = TextAnchor.MiddleCenter,
-                    fontSize = 15,
-                    fontStyle = FontStyle.Bold,
-                    padding = new RectOffset(14, 14, 8, 8)
-                };
-                _promptStyle.normal.textColor = new Color(1f, 0.96f, 0.78f);
+                return;
             }
 
-            const float w = 340f;
-            const float h = 42f;
-            Rect rect = new Rect((Screen.width - w) * 0.5f, Screen.height - 135f, w, h);
-            GUI.Box(rect, $"[E]  {_currentTarget.PromptText}", _promptStyle);
+            _promptContent.text = promptText;
+            Vector2 textSize = _labelStyle.CalcSize(_promptContent);
+
+            // Lebar otomatis mengikuti panjang teks (tidak pernah terpotong!)
+            const float h = 44f;
+            const float badgeSize = 28f;
+            const float leftPad = 12f;
+            const float gap = 10f;
+            const float rightPad = 20f;
+            float w = Mathf.Max(180f, leftPad + badgeSize + gap + textSize.x + rightPad);
+
+            Rect pillRect = new Rect((Screen.width - w) * 0.5f, Screen.height - 132f, w, h);
+            GUI.Box(pillRect, GUIContent.none, _pillStyle);
+
+            // Badge bulat tombol [E] di sisi kiri pill
+            Rect badgeRect = new Rect(pillRect.x + leftPad, pillRect.y + (h - badgeSize) * 0.5f, badgeSize, badgeSize);
+            GUI.DrawTexture(badgeRect, StylizedUITheme.BadgeCircleTex);
+            GUI.Label(badgeRect, "E", _badgeTextStyle);
+
+            // Teks aksi + drop shadow tipis agar tajam di atas latar kabut
+            Rect textRect = new Rect(badgeRect.xMax + gap, pillRect.y, textSize.x + 6f, h);
+            GUI.Label(new Rect(textRect.x + 1f, textRect.y + 1f, textRect.width, textRect.height), _promptContent, _shadowLabelStyle);
+            GUI.Label(textRect, _promptContent, _labelStyle);
+        }
+
+        private void EnsureStyles()
+        {
+            if (_pillStyle == null)
+            {
+                _pillStyle = StylizedUITheme.CreatePillStyle(14, TextAnchor.MiddleCenter, 16, 8);
+            }
+
+            if (_badgeTextStyle == null)
+            {
+                _badgeTextStyle = new GUIStyle(GUI.skin.label)
+                {
+                    alignment = TextAnchor.MiddleCenter,
+                    fontSize = 14,
+                    fontStyle = FontStyle.Bold
+                };
+                _badgeTextStyle.normal.textColor = new Color(0.16f, 0.14f, 0.10f);
+            }
+
+            if (_labelStyle == null)
+            {
+                _labelStyle = new GUIStyle(GUI.skin.label)
+                {
+                    alignment = TextAnchor.MiddleLeft,
+                    fontSize = 15,
+                    fontStyle = FontStyle.Bold,
+                    wordWrap = false
+                };
+                _labelStyle.normal.textColor = Color.white;
+            }
+
+            if (_shadowLabelStyle == null)
+            {
+                _shadowLabelStyle = new GUIStyle(_labelStyle);
+                _shadowLabelStyle.normal.textColor = new Color(0.08f, 0.12f, 0.15f, 0.85f);
+            }
         }
 
 #if UNITY_EDITOR

@@ -122,7 +122,8 @@ namespace PulauKabut.Core
                 _hudStyle.normal.textColor = new Color(1f, 0.94f, 0.72f);
             }
 
-            GUI.Box(new Rect(12f, 12f, 225f, 70f), _cachedHudText, _hudStyle);
+            // Ditempatkan rapi tepat di bawah Minimap bulat pojok kiri atas
+            GUI.Box(new Rect(14f, 166f, 210f, 66f), _cachedHudText, _hudStyle);
         }
     }
 }

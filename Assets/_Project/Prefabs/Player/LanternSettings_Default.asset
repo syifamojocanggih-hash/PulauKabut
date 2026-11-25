@@ -14,19 +14,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PulauKabut.Lantern.LanternSettings
   revealRadius: 12
   lightIntensity: 5
-  lightRange: 16
+  lightRange: 10
   lightColor: {r: 1, g: 0.81, b: 0.44, a: 1}
   fadeSpeed: 8
   startLit: 0
   enableDurationLimit: 1
-  maxChargeDuration: 18
-  rechargeDelay: 1.2
-  rechargeDuration: 10
-  minChargeToRelight: 0.2
-  lowChargeFlickerThreshold: 0.25
+  maxChargeDuration: 10
+  rechargeDelay: 2.5
+  rechargeDuration: 300
+  minChargeToRelight: 0.15
+  lowChargeFlickerThreshold: 0.3
   controlSceneFog: 1
-  unlitFogStart: 4
-  unlitFogEnd: 24
-  litFogStart: 12
-  litFogEnd: 52
+  unlitFogStart: 1.5
+  unlitFogEnd: 11
+  litFogStart: 4
+  litFogEnd: 19
   fogTransitionSpeed: 3.5

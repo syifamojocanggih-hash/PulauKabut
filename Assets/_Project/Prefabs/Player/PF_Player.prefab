@@ -1430,8 +1430,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 892cde8290dfc5447a930bcfcf559239, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PulauKabut.Player.PlayerDebugOverlay
-  showOverlay: 1
-  showControlHints: 1
+  showOverlay: 0
+  showControlHints: 0
   playerController: {fileID: 2344989280350818192}
   cameraController: {fileID: 0}
   lanternController: {fileID: 0}

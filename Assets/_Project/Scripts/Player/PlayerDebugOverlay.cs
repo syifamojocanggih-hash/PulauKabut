@@ -15,11 +15,11 @@ namespace PulauKabut.Player
         private const float RefreshInterval = 0.2f;
 
         [Header("Pengaturan Tampilan")]
-        [Tooltip("Tampilkan panel debug FPS & status di pojok kiri atas. Tekan F3 untuk toggle.")]
-        [SerializeField] private bool showOverlay = true;
+        [Tooltip("Tampilkan panel debug FPS & status. Default tersembunyi — tekan F3 atau klik tombol [F3] FPS.")]
+        [SerializeField] private bool showOverlay = false;
 
-        [Tooltip("Tampilkan petunjuk tombol kontrol di pojok kiri bawah. Tekan H untuk toggle.")]
-        [SerializeField] private bool showControlHints = true;
+        [Tooltip("Tampilkan petunjuk tombol kontrol. Default tersembunyi — tekan H atau klik tombol [H] Kontrol.")]
+        [SerializeField] private bool showControlHints = false;
 
         [Header("Referensi (Opsional)")]
         [SerializeField] private PlayerController playerController;
@@ -36,8 +36,9 @@ namespace PulauKabut.Player
         private GUIStyle _boxStyle;
         private GUIStyle _pauseStyle;
         private GUIStyle _barLabelStyle;
+        private GUIStyle _toggleBtnStyle;
         private Texture2D _solidTex;
-        private Rect _debugRect = new Rect(12f, 12f, 255f, 124f);
+        private Rect _debugRect = new Rect(12f, 12f, 240f, 120f);
 
         private int _frameCount;
         private float _elapsedTime;
@@ -182,26 +183,62 @@ namespace PulauKabut.Player
         {
             EnsureStyles();
 
+            // Bar tombol toggle mini di pojok kanan atas (bisa diklik maupun pakai shortcut J / H / F3)
+            const float btnH = 26f;
+            const float gap = 6f;
+            const float fpsW = 76f;
+            const float hintBtnW = 88f;
+            const float misiBtnW = 76f;
+            float rightX = Screen.width - 14f;
+
+            Rect fpsBtnRect = new Rect(rightX - fpsW, 14f, fpsW, btnH);
+            Rect hintBtnRect = new Rect(fpsBtnRect.x - gap - hintBtnW, 14f, hintBtnW, btnH);
+            Rect misiBtnRect = new Rect(hintBtnRect.x - gap - misiBtnW, 14f, misiBtnW, btnH);
+
+            if (GUI.Button(misiBtnRect, "[J] Misi", _toggleBtnStyle) && UI.ObjectiveGuide.Instance != null)
+            {
+                UI.ObjectiveGuide.Instance.ToggleMissionList();
+            }
+
+            if (GUI.Button(hintBtnRect, "[H] Kontrol", _toggleBtnStyle))
+            {
+                showControlHints = !showControlHints;
+                RebuildTexts();
+            }
+
+            if (GUI.Button(fpsBtnRect, "[F3] FPS", _toggleBtnStyle))
+            {
+                showOverlay = !showOverlay;
+                RebuildTexts();
+            }
+
+            // Jika panel Daftar Misi terbuka, geser panel FPS sedikit ke bawah supaya tidak bertumpuk
+            float rightPanelY = 48f;
+            if (UI.ObjectiveGuide.Instance != null && UI.ObjectiveGuide.Instance.ShowMissionList)
+            {
+                rightPanelY = 230f;
+            }
+
             if (showOverlay && !string.IsNullOrEmpty(_cachedDebugText))
             {
-                Rect rightTopRect = new Rect(Screen.width - _debugRect.width - 12f, 12f, _debugRect.width, _debugRect.height);
+                Rect rightTopRect = new Rect(Screen.width - _debugRect.width - 14f, rightPanelY, _debugRect.width, _debugRect.height);
                 GUI.Box(rightTopRect, _cachedDebugText, _boxStyle);
             }
 
-            const float hintWidth = 320f;
+            const float hintWidth = 310f;
             const float hintHeight = 166f;
-            float lanternBarBottomY = Screen.height - 12f;
+            float lanternBarBottomY = Screen.height - 14f;
 
             if (showControlHints && !string.IsNullOrEmpty(_cachedHintText))
             {
-                Rect hintRect = new Rect(12f, Screen.height - hintHeight - 12f, hintWidth, hintHeight);
+                Rect hintRect = new Rect(14f, Screen.height - hintHeight - 14f, hintWidth, hintHeight);
                 GUI.Box(hintRect, _cachedHintText, _boxStyle);
                 lanternBarBottomY = hintRect.y - 8f;
             }
 
             if (lanternController != null && lanternController.HasDurationLimit)
             {
-                DrawLanternChargeBar(12f, lanternBarBottomY - 46f, hintWidth, 46f);
+                DrawLanternChargeBar(14f, lanternBarBottomY - 46f, hintWidth, 46f);
             }
 
             if (GameManager.Instance != null && GameManager.Instance.IsPaused)
@@ -284,6 +321,11 @@ namespace PulauKabut.Player
                 _solidTex = new Texture2D(1, 1, TextureFormat.RGBA32, false);
                 _solidTex.SetPixel(0, 0, Color.white);
                 _solidTex.Apply();
+            }
+
+            if (_toggleBtnStyle == null)
+            {
+                _toggleBtnStyle = UI.StylizedUITheme.CreatePillStyle(11, TextAnchor.MiddleCenter, 8, 4);
             }
 
             if (_pauseStyle == null)
