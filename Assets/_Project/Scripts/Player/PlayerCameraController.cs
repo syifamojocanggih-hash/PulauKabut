@@ -1,3 +1,4 @@
+using PulauKabut.Lantern;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -23,6 +24,14 @@ namespace PulauKabut.Player
         [Tooltip("Objek Visuals karakter. Otomatis disembunyikan saat kamera tepat di mata (First-Person) dan tampil penuh saat Third-Person/Plot.")]
         [SerializeField] private GameObject visualsRoot;
 
+        [Tooltip("Tangan kanan & lentera khusus mode First-Person (child dari CameraTarget). Tampil saat mode First-Person & mengangkat lentera.")]
+        [SerializeField] private Transform firstPersonHandRoot;
+
+        [Header("Animasi Tangan First-Person")]
+        [SerializeField] private Vector3 fpHandLitLocalPos = new Vector3(0.36f, -0.26f, 0.56f);
+        [SerializeField] private Vector3 fpHandUnlitLocalPos = new Vector3(0.36f, -0.68f, 0.42f);
+        [SerializeField] private float fpHandMoveSpeed = 10f;
+
         [Header("Kamera Manual (Cinemachine 3)")]
         [Tooltip("Kamera Third-Person di belakang karakter.")]
         [SerializeField] private CinemachineCamera thirdPersonCamera;
@@ -37,6 +46,9 @@ namespace PulauKabut.Player
         private PlayerInputActions _input;
         private Transform _mainCameraTransform;
         private CinemachineThirdPersonFollow _thirdPersonFollow;
+        private LanternController _lanternController;
+        private PlayerController _playerController;
+        private float _fpSwayTime;
         private float _targetYaw;
         private float _targetPitch;
         private float _currentYaw;
@@ -64,6 +76,8 @@ namespace PulauKabut.Player
             }
 
             _input = new PlayerInputActions();
+            _lanternController = GetComponent<LanternController>();
+            _playerController = GetComponent<PlayerController>();
 
             if (thirdPersonCamera != null)
             {
@@ -158,6 +172,7 @@ namespace PulauKabut.Player
         private void LateUpdate()
         {
             UpdateVisualsVisibility();
+            UpdateFirstPersonHand();
         }
 
         /// <summary>Berpindah antara kamera belakang karakter (Third-Person) dan pandangan mata (First-Person).</summary>
@@ -207,6 +222,41 @@ namespace PulauKabut.Player
                 _isVisualsVisible = shouldShowVisuals;
                 visualsRoot.SetActive(_isVisualsVisible);
             }
+        }
+
+        private void UpdateFirstPersonHand()
+        {
+            if (firstPersonHandRoot == null)
+            {
+                return;
+            }
+
+            // Tangan First-Person hanya tampil ketika tubuh penuh sedang disembunyikan (lensa di mata)
+            bool showFpHand = !_isVisualsVisible;
+            if (firstPersonHandRoot.gameObject.activeSelf != showFpHand)
+            {
+                firstPersonHandRoot.gameObject.SetActive(showFpHand);
+            }
+
+            if (!showFpHand || Time.timeScale <= 0f)
+            {
+                return;
+            }
+
+            bool isLit = _lanternController != null && _lanternController.IsLit;
+            Vector3 targetPos = isLit ? fpHandLitLocalPos : fpHandUnlitLocalPos;
+
+            // Ayunan lembut saat berjalan agar tangan First-Person terasa hidup
+            float speed = _playerController != null ? _playerController.HorizontalSpeed : 0f;
+            if (speed > 0.2f && _playerController.IsGrounded)
+            {
+                _fpSwayTime += Time.deltaTime * 9f;
+                targetPos.x += Mathf.Cos(_fpSwayTime * 0.5f) * 0.015f;
+                targetPos.y += Mathf.Abs(Mathf.Sin(_fpSwayTime * 0.5f)) * 0.02f;
+            }
+
+            float t = 1f - Mathf.Exp(-fpHandMoveSpeed * Time.deltaTime);
+            firstPersonHandRoot.localPosition = Vector3.Lerp(firstPersonHandRoot.localPosition, targetPos, t);
         }
     }
 }

@@ -13,9 +13,18 @@ MonoBehaviour:
   m_Name: PlayerMovementSettings_Default
   m_EditorClassIdentifier: Assembly-CSharp::PulauKabut.Player.PlayerMovementSettings
   moveSpeed: 5
+  sprintSpeed: 7.8
   accelerationTime: 0.15
   decelerationTime: 0.08
   rotationSpeed: 720
+  jumpHeight: 1.6
+  jumpCutMultiplier: 0.5
+  coyoteTime: 0.12
+  jumpBufferTime: 0.1
+  enableGlide: 1
+  glideFallSpeed: -2.2
+  glideMoveSpeed: 6.5
+  glideAccelerationTime: 0.25
   gravity: -25
   groundedStickForce: -2
   maxFallSpeed: -40
@@ -25,3 +34,11 @@ MonoBehaviour:
   groundCheckDistance: 0.15
   slopeLimit: 50
   stepOffset: 0.3
+  lookSensitivity: 0.15
+  lookSmoothing: 16
+  minPitch: -75
+  maxPitch: 80
+  invertY: 0
+  firstPersonHideDistance: 1.1
+  thirdPersonDistance: 5
+  startInFirstPerson: 0

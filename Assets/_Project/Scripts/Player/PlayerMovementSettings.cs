@@ -110,7 +110,7 @@ namespace PulauKabut.Player
 
         [Tooltip("Jika jarak kamera aktif ke titik mata lebih dekat dari nilai ini, visual karakter disembunyikan agar tidak menghalangi pandangan POV 1.")]
         [Min(0.1f)]
-        [SerializeField] private float firstPersonHideDistance = 0.65f;
+        [SerializeField] private float firstPersonHideDistance = 1.1f;
 
         [Tooltip("Jarak kamera di belakang karakter saat mode Third-Person (meter).")]
         [Range(2f, 10f)]

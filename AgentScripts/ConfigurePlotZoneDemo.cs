@@ -21,8 +21,10 @@ public static class ConfigurePlotZoneDemo
         SerializedObject so = new SerializedObject(zone);
         if (tower != null) so.FindProperty("storyFocusTarget").objectReferenceValue = tower.transform;
         so.FindProperty("playOnce").boolValue = true;
-        so.FindProperty("autoReturnDuration").floatValue = 3.0f;
+        so.FindProperty("autoReturnDuration").floatValue = 3.2f;
         so.FindProperty("pausePlayerDuringShot").boolValue = true;
+        so.FindProperty("captionTitle").stringValue = "MENARA LENTERA";
+        so.FindProperty("captionSubtitle").stringValue = "Cahaya di puncak bukit itu menunggu untuk dinyalakan kembali guna menyibak kabut pulau.";
         so.ApplyModifiedPropertiesWithoutUndo();
 
         Scene activeScene = SceneManager.GetActiveScene();
