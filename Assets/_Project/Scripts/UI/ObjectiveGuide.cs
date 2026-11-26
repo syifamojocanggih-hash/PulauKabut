@@ -36,9 +36,11 @@ namespace PulauKabut.UI
         private readonly StringBuilder _listBuilder = new StringBuilder(320);
 
         private string _bannerText = string.Empty;
+        private string _unlockBannerText = string.Empty;
         private string _cachedListText = string.Empty;
         private Transform _cameraTransform;
         private GUIStyle _bannerStyle;
+        private GUIStyle _unlockBannerStyle;
         private GUIStyle _listStyle;
         private GUIStyle _headerStyle;
         private GUIStyle _keyStyle;
@@ -48,6 +50,7 @@ namespace PulauKabut.UI
         private GUIStyle _doneTextStyle;
         private string _distText = "0 m";
         private float _bannerTimer;
+        private float _unlockBannerTimer;
         private float _refreshTimer;
 
         /// <summary>Transform tujuan misi aktif saat ini (dipakai juga oleh MinimapHUD).</summary>
@@ -100,6 +103,11 @@ namespace PulauKabut.UI
                 _bannerTimer = Mathf.Max(0f, _bannerTimer - Time.unscaledDeltaTime);
             }
 
+            if (_unlockBannerTimer > 0f)
+            {
+                _unlockBannerTimer = Mathf.Max(0f, _unlockBannerTimer - Time.unscaledDeltaTime);
+            }
+
             if (ShowMissionList)
             {
                 _refreshTimer += Time.unscaledDeltaTime;
@@ -147,6 +155,14 @@ namespace PulauKabut.UI
             _bannerTimer = bannerDisplayDuration;
         }
 
+        /// <summary>Menampilkan banner notifikasi pembukaan item/fitur di bagian atas layar (misal "Lentera Unlocked").</summary>
+        public void ShowUnlockNotification(string message, float duration = 0f)
+        {
+            if (string.IsNullOrEmpty(message)) return;
+            _unlockBannerText = message;
+            _unlockBannerTimer = duration > 0f ? duration : bannerDisplayDuration;
+        }
+
         private void RebuildMissionListText()
         {
             if (targetTransform != null)
@@ -173,7 +189,24 @@ namespace PulauKabut.UI
 
             EnsureStyles();
 
-            // 1. Banner notifikasi misi baru (chamfered auto-width, muncul sekali lalu memudar halus!)
+            // 1a. Banner notifikasi unlock item/fitur di bagian paling atas layar
+            bool hasUnlockBanner = _unlockBannerTimer > 0f && !string.IsNullOrEmpty(_unlockBannerText);
+            if (hasUnlockBanner)
+            {
+                float alpha = _unlockBannerTimer < 0.8f ? Mathf.Clamp01(_unlockBannerTimer / 0.8f) : 1f;
+                Color prev = GUI.color;
+                GUI.color = new Color(1f, 1f, 1f, alpha);
+
+                Vector2 textSize = _unlockBannerStyle.CalcSize(new GUIContent(_unlockBannerText));
+                float w = Mathf.Clamp(textSize.x + 42f, 240f, Screen.width - 280f);
+                const float h = 42f;
+                Rect rect = new Rect((Screen.width - w) * 0.5f, 14f, w, h);
+                GUI.Box(rect, _unlockBannerText, _unlockBannerStyle);
+
+                GUI.color = prev;
+            }
+
+            // 1b. Banner notifikasi misi baru (chamfered auto-width, muncul sekali lalu memudar halus!)
             if (_bannerTimer > 0f && !string.IsNullOrEmpty(_bannerText))
             {
                 float alpha = _bannerTimer < 0.8f ? Mathf.Clamp01(_bannerTimer / 0.8f) : 1f;
@@ -183,7 +216,8 @@ namespace PulauKabut.UI
                 Vector2 textSize = _bannerStyle.CalcSize(new GUIContent(_bannerText));
                 float w = Mathf.Clamp(textSize.x + 36f, 260f, Screen.width - 280f);
                 const float h = 42f;
-                Rect rect = new Rect((Screen.width - w) * 0.5f, 14f, w, h);
+                float yPos = hasUnlockBanner ? 62f : 14f;
+                Rect rect = new Rect((Screen.width - w) * 0.5f, yPos, w, h);
                 GUI.Box(rect, _bannerText, _bannerStyle);
 
                 GUI.color = prev;
@@ -240,6 +274,12 @@ namespace PulauKabut.UI
             {
                 _bannerStyle = StylizedUITheme.CreatePillStyle(15, TextAnchor.MiddleCenter, 18, 8);
                 _bannerStyle.normal.textColor = StylizedUITheme.GoldAccent;
+            }
+
+            if (_unlockBannerStyle == null)
+            {
+                _unlockBannerStyle = StylizedUITheme.CreatePillStyle(16, TextAnchor.MiddleCenter, 20, 8);
+                _unlockBannerStyle.normal.textColor = StylizedUITheme.MintAccent;
             }
 
             if (_listStyle == null)

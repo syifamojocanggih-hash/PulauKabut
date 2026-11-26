@@ -18396,7 +18396,7 @@ MonoBehaviour:
   fadeDuration: 0.25
   nextObjectiveTarget: {fileID: 734838248}
   nextObjectiveTitle: Nyalakan Lentera [F] & Ambil Pecahan 1 (Jalur Akar)
-  grantLanternOnDialogComplete: 0
+  grantLanternOnDialogComplete: 1
 --- !u!136 &487408292
 CapsuleCollider:
   m_ObjectHideFlags: 0

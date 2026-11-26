@@ -20,8 +20,8 @@ MonoBehaviour:
   startLit: 0
   enableDurationLimit: 1
   maxChargeDuration: 10
-  rechargeDelay: 2.5
-  rechargeDuration: 300
+  rechargeDelay: 1.2
+  rechargeDuration: 12
   minChargeToRelight: 0.15
   lowChargeFlickerThreshold: 0.3
   controlSceneFog: 1

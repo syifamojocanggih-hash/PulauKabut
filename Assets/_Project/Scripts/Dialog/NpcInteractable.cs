@@ -111,9 +111,13 @@ namespace PulauKabut.Dialog
 
         private void UpdateNextObjective()
         {
-            if (grantLanternOnDialogComplete && LanternController.ActiveLantern != null)
+            bool shouldGrantLantern = grantLanternOnDialogComplete ||
+                gameObject.name.IndexOf("MbahSauh", System.StringComparison.OrdinalIgnoreCase) >= 0;
+
+            if (shouldGrantLantern && LanternController.ActiveLantern != null && !LanternController.ActiveLantern.HasLantern)
             {
                 LanternController.ActiveLantern.GrantLantern(turnOnImmediately: false);
+                ObjectiveGuide.Instance?.ShowUnlockNotification("Lentera Unlocked");
             }
             if (nextObjectiveTarget != null && ObjectiveGuide.Instance != null)
             {
