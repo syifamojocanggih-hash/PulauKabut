@@ -95,6 +95,7 @@ namespace PulauKabut.Lantern
                 lantern.RefillCharge(1f);
             }
 
+            GameAudioManager.Instance?.PlayBrazierLit();
             OnBrazierLit?.Invoke(this);
         }
 

@@ -18766,6 +18766,7 @@ GameObject:
   - component: {fileID: 502529026}
   - component: {fileID: 502529027}
   - component: {fileID: 502529028}
+  - component: {fileID: 502529029}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -18920,6 +18921,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 96a241f478fab174f981917025014fcd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PulauKabut.Core.SaveLoadBridge
+--- !u!114 &502529029
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 502529018}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2917ac4c9521d745b735200862d2e2c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PulauKabut.Core.GameAudioManager
+  sfxMixerGroup: {fileID: 0}
+  ambientMixerGroup: {fileID: 0}
+  ambientLoopClip: {fileID: 8300000, guid: 4c88d1587e3755c41820fa1c3fd12406, type: 3}
+  pickupClip: {fileID: 8300000, guid: 806299210c4933c49b51157f355beb41, type: 3}
+  milestoneClip: {fileID: 8300000, guid: 41b0cd130cc82c7418c339ef47b6d9f8, type: 3}
+  lanternOnClip: {fileID: 8300000, guid: 231fec534d2919c40b4beaa04f8e70cb, type: 3}
+  lanternOffClip: {fileID: 8300000, guid: f7fd5482ddcb1ab47ba7dc344e70914a, type: 3}
+  brazierLitClip: {fileID: 8300000, guid: 52160f5fd3abd1249bccfb219579c033, type: 3}
+  uiClickClip: {fileID: 8300000, guid: 0399ff26e3f7425448e412558c70e8ca, type: 3}
+  sfxVolume: 0.75
+  ambientVolume: 0.35
 --- !u!1001 &502645938
 PrefabInstance:
   m_ObjectHideFlags: 0

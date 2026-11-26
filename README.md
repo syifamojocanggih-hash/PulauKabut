@@ -354,4 +354,24 @@ Gunakan awalan berikut pada setiap commit:
 
 ---
 
+## 13. Integrasi Tools, MCP, & Agent Skills (Unity 6 + Blender)
+
+Proyek ini terhubung dengan alur kerja AI Agent (Antigravity) untuk mempercepat pembuatan aset 3D, penataan scene, audio, UI, dan optimasi build:
+
+### A. Koneksi MCP Aktif
+- **`blender` (`mcp-for-blender`)** — terhubung langsung ke **Blender 5.3** (ekspor model *Cozy Stylized Low-Poly* `.fbx` & `.blend` ke `Assets/_Project/Art/Models/`, plus pratinjau viewport `look`).
+- **`unityMCP` + `unity-cli` (`com.unity.pipeline`)** — kontrol live Unity 6 Editor untuk kompilasi C#, verifikasi Console (`0` error), *Play Mode testing*, dan otomatisasi Build Windows.
+
+### B. Agent Skills yang Digunakan dalam Pembangunan
+| Kategori | Skill | Kegunaan Utama |
+| --- | --- | --- |
+| **3D & Look Polish** | `craft-game-floors`, `urp-postprocessing`, `shader-graph-create-custom-node` | Menyetel pencahayaan *Golden Hour + Trilight + SSAO*, Bloom, shader minimap oktagon, dan standar kelayakan game (*core loop, audio, game feel*). |
+| **Build & Pipeline** | `unity-cli`, `unity-pipeline`, `unity-package-management`, `fix-3d-physics-collisions` | Recompile otomatis, manajemen paket UPM, tes fisika/collider, dan build `.exe` 60+ FPS. |
+| **UI & Font** | `ui`, `ui-ugui`, `ui-uitk`, `optimize-text-mesh-pro` | Penataan HUD *chamfered teal-emas* dengan font **Baloo 2** & **Nunito** (`Assets/_Project/Resources/Fonts/`). |
+| **Audio & Audit** | `audio-setup-mixers`, `optimize-audio`, `project-auditor-fixes` | Routing *AudioMixer*, kompresi audio hemat RAM, dan audit performa sebelum merge ke `main`. |
+
+> **Catatan tentang Meshy (Opsional):** Plugin Marketplace **Meshy** (*Text/Image-to-3D*) bersifat opsional dan memakai sistem **kredit** (gratis terbatas 100 kredit/bulan dengan lisensi CC BY 4.0, paket berbayar mulai ~\$20/bulan). Untuk proyek ini, kita **tidak wajib memakainya** karena seluruh aset 3D *Cozy Low-Poly* dapat dibuat gratis 100% lewat **Blender 5.3 + `mcp-for-blender`**.
+
+---
+
 Untuk panduan kontribusi dan daftar perintah Git harian secara lengkap, lihat [CONTRIBUTING.md](CONTRIBUTING.md).
