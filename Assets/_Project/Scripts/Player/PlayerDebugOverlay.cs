@@ -61,6 +61,7 @@ namespace PulauKabut.Player
         private int _frameCount;
         private float _elapsedTime;
         private float _currentFps;
+        private bool _showPauseControls;
 
         private void Awake()
         {
@@ -215,7 +216,7 @@ namespace PulauKabut.Player
             // Panel KONTROL di pojok kiri bawah dengan keycap emas (persis Hud.dc.html!)
             if (showControlHints)
             {
-                DrawControlsPanel(14f, Screen.height - 260f - 14f, 296f, 260f);
+                DrawControlsPanel(14f, Screen.height - 286f - 14f, 296f, 286f);
             }
 
             // Kartu Daya Lentera di pojok KANAN BAWAH baru muncul setelah pemain diberi Lentera oleh Mbah Sauh!
@@ -226,35 +227,52 @@ namespace PulauKabut.Player
 
             if (GameManager.Instance != null && GameManager.Instance.IsPaused)
             {
-                const float w = 340f;
-                const float h = 232f;
-                Rect card = new Rect((Screen.width - w) * 0.5f, (Screen.height - h) * 0.5f, w, h);
-                GUI.Box(card, GUIContent.none, _boxStyle);
-
-                GUI.Label(new Rect(card.x, card.y + 16f, card.width, 32f), "GAME DIJEDA", _pauseStyle);
-
-                float bx = card.x + 28f;
-                float bw = card.width - 56f;
-                const float bh = 40f;
-
-                if (UI.StylizedUITheme.DrawKeyButton(new Rect(bx, card.y + 62f, bw, bh), "Esc", "Lanjutkan", _toggleBtnStyle, _keycapStyle, _btnTextStyle))
+                if (_showPauseControls)
                 {
-                    GameManager.Instance.TogglePause();
+                    DrawPauseControlsMenu();
                 }
-
-                if (UI.StylizedUITheme.DrawKeyButton(new Rect(bx, card.y + 112f, bw, bh), "S", "Simpan Progres", _toggleBtnStyle, _keycapStyle, _btnTextStyle))
+                else
                 {
-                    SaveLoadBridge.Instance?.SaveNow();
-                }
+                    const float w = 340f;
+                    const float h = 282f;
+                    Rect card = new Rect((Screen.width - w) * 0.5f, (Screen.height - h) * 0.5f, w, h);
+                    GUI.Box(card, GUIContent.none, _boxStyle);
 
-                if (UI.StylizedUITheme.DrawKeyButton(new Rect(bx, card.y + 162f, bw, bh), "M", "Kembali ke Menu Utama", _toggleBtnStyle, _keycapStyle, _btnTextStyle))
-                {
-                    SaveLoadBridge.Instance?.SaveNow();
-                    Time.timeScale = 1f;
-                    Cursor.lockState = CursorLockMode.None;
-                    Cursor.visible = true;
-                    SceneManager.LoadScene("MainMenu");
+                    GUI.Label(new Rect(card.x, card.y + 16f, card.width, 32f), "GAME DIJEDA", _pauseStyle);
+
+                    float bx = card.x + 28f;
+                    float bw = card.width - 56f;
+                    const float bh = 40f;
+
+                    if (UI.StylizedUITheme.DrawKeyButton(new Rect(bx, card.y + 62f, bw, bh), "Esc", "Lanjutkan", _toggleBtnStyle, _keycapStyle, _btnTextStyle))
+                    {
+                        GameManager.Instance.TogglePause();
+                    }
+
+                    if (UI.StylizedUITheme.DrawKeyButton(new Rect(bx, card.y + 112f, bw, bh), "H", "Setting (Kontrol)", _toggleBtnStyle, _keycapStyle, _btnTextStyle))
+                    {
+                        _showPauseControls = true;
+                        RebuildTexts();
+                    }
+
+                    if (UI.StylizedUITheme.DrawKeyButton(new Rect(bx, card.y + 162f, bw, bh), "S", "Simpan Progres", _toggleBtnStyle, _keycapStyle, _btnTextStyle))
+                    {
+                        SaveLoadBridge.Instance?.SaveNow();
+                    }
+
+                    if (UI.StylizedUITheme.DrawKeyButton(new Rect(bx, card.y + 212f, bw, bh), "Q", "Kembali ke Menu Utama", _toggleBtnStyle, _keycapStyle, _btnTextStyle))
+                    {
+                        SaveLoadBridge.Instance?.SaveNow();
+                        Time.timeScale = 1f;
+                        Cursor.lockState = CursorLockMode.None;
+                        Cursor.visible = true;
+                        SceneManager.LoadScene("MainMenu");
+                    }
                 }
+            }
+            else
+            {
+                _showPauseControls = false;
             }
         }
 
@@ -298,8 +316,37 @@ namespace PulauKabut.Player
             DrawControlRow(x + 16f, ry, "Spasi", "Lompat (Tahan = Glide)", 52f); ry += 26f;
             DrawControlRow(x + 16f, ry, "E", "Interaksi / Bicara NPC", 28f); ry += 26f;
             DrawControlRow(x + 16f, ry, "F", _lanternHintLabel, 28f); ry += 26f;
+            DrawControlRow(x + 16f, ry, "M", "Perbesar / Perkecil Peta", 28f); ry += 26f;
             DrawControlRow(x + 16f, ry, "V", _povHintLabel, 28f); ry += 26f;
             DrawControlRow(x + 16f, ry, "Esc", "Jeda / Lanjut", 36f);
+        }
+
+        private void DrawPauseControlsMenu()
+        {
+            const float w = 340f;
+            const float h = 368f;
+            Rect card = new Rect((Screen.width - w) * 0.5f, (Screen.height - h) * 0.5f, w, h);
+            GUI.Box(card, GUIContent.none, _boxStyle);
+
+            GUI.Label(new Rect(card.x, card.y + 14f, card.width, 30f), "SETTING KONTROL", _pauseStyle);
+
+            float rx = card.x + 24f;
+            float ry = card.y + 52f;
+            DrawControlRow(rx, ry, "WASD", "Jalan", 52f); ry += 26f;
+            DrawControlRow(rx, ry, "Shift", "Sprint", 52f); ry += 26f;
+            DrawControlRow(rx, ry, "Mouse", "Arahkan Kamera", 52f); ry += 26f;
+            DrawControlRow(rx, ry, "Spasi", "Lompat (Tahan = Glide)", 52f); ry += 26f;
+            DrawControlRow(rx, ry, "E", "Interaksi / Bicara NPC", 32f); ry += 26f;
+            DrawControlRow(rx, ry, "F", "Nyalakan / Padam Lentera", 32f); ry += 26f;
+            DrawControlRow(rx, ry, "M", "Perbesar / Perkecil Peta", 32f); ry += 26f;
+            DrawControlRow(rx, ry, "J", "Daftar Misi", 32f); ry += 26f;
+            DrawControlRow(rx, ry, "V", "Ganti Kamera (POV)", 32f); ry += 26f;
+            DrawControlRow(rx, ry, "Esc", "Jeda / Lanjut", 38f);
+
+            if (UI.StylizedUITheme.DrawKeyButton(new Rect(card.x + 28f, card.yMax - 52f, card.width - 56f, 38f), "←", "Kembali", _toggleBtnStyle, _keycapStyle, _btnTextStyle))
+            {
+                _showPauseControls = false;
+            }
         }
 
         private void DrawControlRow(float x, float y, string key, string desc, float keyW)

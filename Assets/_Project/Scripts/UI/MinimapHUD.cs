@@ -3,6 +3,7 @@ using PulauKabut.Core;
 using PulauKabut.Dialog;
 using PulauKabut.Lantern;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
@@ -25,10 +26,17 @@ namespace PulauKabut.UI
         [Min(18f)]
         [SerializeField] private float worldRadius = 38f;
 
+        [Tooltip("Radius cakupan dunia (meter) saat peta diperbesar dengan tombol M.")]
+        [Min(40f)]
+        [SerializeField] private float maximizedWorldRadius = 115f;
+
         [Tooltip("Transform pemain (kosong = otomatis cari PlayerController saat Start).")]
         [SerializeField] private Transform playerTransform;
 
         [SerializeField] private bool showMinimap = true;
+
+        /// <summary>True jika peta sedang dalam mode diperbesar (tombol M).</summary>
+        public bool IsMaximized => _isMaximized;
 
         private readonly List<Transform> _npcs = new List<Transform>(8);
         private readonly List<Transform> _shards = new List<Transform>(12);
@@ -39,7 +47,7 @@ namespace PulauKabut.UI
         private static readonly int WorldBoundsId = Shader.PropertyToID("_WorldBounds");
 
         private const int FowSize = 128;
-        private static readonly Vector4 WorldBounds = new Vector4(-90f, -140f, 200f, 260f);
+        private static readonly Vector4 WorldBounds = new Vector4(-130f, -140f, 230f, 275f);
 
         private Transform _cameraTransform;
         private Camera _minimapCam;
@@ -59,6 +67,8 @@ namespace PulauKabut.UI
         private Texture2D _coneTex;
         private Material _maskMat;
         private GUIStyle _northBadgeStyle;
+        private GUIStyle _maxHintStyle;
+        private bool _isMaximized;
 
         private void OnEnable()
         {
@@ -172,7 +182,7 @@ namespace PulauKabut.UI
 
         private void CreateMinimapCamera()
         {
-            _minimapRT = new RenderTexture(256, 256, 16, RenderTextureFormat.ARGB32)
+            _minimapRT = new RenderTexture(512, 512, 16, RenderTextureFormat.ARGB32)
             {
                 name = "RT_Minimap_GTA",
                 filterMode = FilterMode.Bilinear,
@@ -205,6 +215,29 @@ namespace PulauKabut.UI
             }
         }
 
+        private void Update()
+        {
+            if (!showMinimap || Time.timeScale <= 0f)
+            {
+                return;
+            }
+
+            if (DialogManager.Instance != null && DialogManager.Instance.IsOpen)
+            {
+                return;
+            }
+
+            if (Keyboard.current != null && Keyboard.current.mKey.wasPressedThisFrame)
+            {
+                _isMaximized = !_isMaximized;
+                if (_minimapCam != null)
+                {
+                    _minimapCam.orthographicSize = _isMaximized ? maximizedWorldRadius : worldRadius;
+                    _minimapCam.Render();
+                }
+            }
+        }
+
         private void LateUpdate()
         {
             if (_minimapCam == null || playerTransform == null) return;
@@ -216,11 +249,12 @@ namespace PulauKabut.UI
 
             float camYaw = _cameraTransform != null ? _cameraTransform.eulerAngles.y : playerTransform.eulerAngles.y;
             Vector3 p = playerTransform.position;
+            float activeRadius = _isMaximized ? maximizedWorldRadius : worldRadius;
 
             // Kamera minimap selalu tepat di atas pemain & berputar mengikuti arah hadap kamera (gaya GTA!)
             _minimapCam.transform.position = new Vector3(p.x, p.y + 65f, p.z);
             _minimapCam.transform.rotation = Quaternion.Euler(90f, camYaw, 0f);
-            _minimapCam.orthographicSize = worldRadius;
+            _minimapCam.orthographicSize = activeRadius;
 
             if (showMinimap)
             {
@@ -287,10 +321,24 @@ namespace PulauKabut.UI
 
             EnsureTextures();
 
+            if (_isMaximized)
+            {
+                Color prevBg = GUI.color;
+                GUI.color = new Color(0.02f, 0.06f, 0.08f, 0.58f);
+                GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), StylizedUITheme.SolidTex);
+                GUI.color = prevBg;
+            }
+
             const float margin = 14f;
-            Rect mapRect = new Rect(margin, margin, mapSize, mapSize);
+            float activeMapSize = _isMaximized ? Mathf.Min(Screen.width, Screen.height) * 0.78f : mapSize;
+            float activeWorldRadius = _isMaximized ? maximizedWorldRadius : worldRadius;
+            float blipScale = _isMaximized ? 1.45f : 1f;
+
+            Rect mapRect = _isMaximized
+                ? new Rect((Screen.width - activeMapSize) * 0.5f, (Screen.height - activeMapSize) * 0.5f - 10f, activeMapSize, activeMapSize)
+                : new Rect(margin, margin, activeMapSize, activeMapSize);
             Vector2 center = mapRect.center;
-            float innerRadius = (mapSize * 0.5f) - 10f;
+            float innerRadius = (activeMapSize * 0.5f) - (_isMaximized ? 20f : 10f);
 
             float camYaw = _cameraTransform != null ? _cameraTransform.eulerAngles.y : playerTransform.eulerAngles.y;
             float yawRad = camYaw * Mathf.Deg2Rad;
@@ -305,7 +353,7 @@ namespace PulauKabut.UI
                 {
                     Vector3 p = playerTransform.position;
                     _maskMat.SetTexture(FogOfWarTexId, _fowTex);
-                    _maskMat.SetVector(PlayerPosId, new Vector4(p.x, p.z, worldRadius, yawRad));
+                    _maskMat.SetVector(PlayerPosId, new Vector4(p.x, p.z, activeWorldRadius, yawRad));
                     _maskMat.SetVector(WorldBoundsId, WorldBounds);
                     Graphics.DrawTexture(innerRect, _minimapRT, _maskMat);
                 }
@@ -325,7 +373,7 @@ namespace PulauKabut.UI
             {
                 Transform t = _braziers[i];
                 if (t == null || !t.gameObject.activeInHierarchy || !IsExplored(t.position)) continue;
-                DrawRotatedBlip(t.position, playerPos, cosY, sinY, center, innerRadius, 7f, new Color(1f, 0.58f, 0.22f, 0.98f), clampToEdge: false);
+                DrawRotatedBlip(t.position, playerPos, cosY, sinY, center, innerRadius, activeWorldRadius, 7f * blipScale, new Color(1f, 0.58f, 0.22f, 0.98f), clampToEdge: false);
             }
 
             // 4. NPC Warga (hanya tampil jika wilayahnya sudah dijelajahi)
@@ -333,7 +381,7 @@ namespace PulauKabut.UI
             {
                 Transform t = _npcs[i];
                 if (t == null || !t.gameObject.activeInHierarchy || !IsExplored(t.position)) continue;
-                DrawRotatedBlip(t.position, playerPos, cosY, sinY, center, innerRadius, 8f, StylizedUITheme.MintAccent, clampToEdge: false);
+                DrawRotatedBlip(t.position, playerPos, cosY, sinY, center, innerRadius, activeWorldRadius, 8f * blipScale, StylizedUITheme.MintAccent, clampToEdge: false);
             }
 
             // 5. Pecahan Cahaya (hanya tampil jika wilayahnya sudah dijelajahi)
@@ -341,7 +389,7 @@ namespace PulauKabut.UI
             {
                 Transform t = _shards[i];
                 if (t == null || !t.gameObject.activeInHierarchy || !IsExplored(t.position)) continue;
-                DrawRotatedBlip(t.position, playerPos, cosY, sinY, center, innerRadius, 8f, new Color(1f, 0.95f, 0.45f, 0.98f), clampToEdge: false);
+                DrawRotatedBlip(t.position, playerPos, cosY, sinY, center, innerRadius, activeWorldRadius, 8f * blipScale, new Color(1f, 0.95f, 0.45f, 0.98f), clampToEdge: false);
             }
 
             // 6. Target Misi Aktif (emas berkedip, menempel di tepi oktagon jika jauh sebagai kompas GTA!)
@@ -350,8 +398,8 @@ namespace PulauKabut.UI
                 float pulse = 0.85f + Mathf.Sin(Time.unscaledTime * 5f) * 0.15f;
                 DrawRotatedBlip(
                     ObjectiveGuide.Instance.CurrentTarget.position,
-                    playerPos, cosY, sinY, center, innerRadius - 2f,
-                    11f * pulse,
+                    playerPos, cosY, sinY, center, innerRadius - 2f, activeWorldRadius,
+                    11f * blipScale * pulse,
                     StylizedUITheme.GoldAccent,
                     clampToEdge: true);
             }
@@ -367,7 +415,8 @@ namespace PulauKabut.UI
 
             // 8. Panah Emas Karakter di tengah (selalu menghadap depan/atas seperti GTA!)
             GUI.color = StylizedUITheme.GoldAccent;
-            GUI.DrawTexture(new Rect(center.x - 10f, center.y - 10f, 20f, 20f), _arrowTex);
+            float arrowSize = 20f * blipScale;
+            GUI.DrawTexture(new Rect(center.x - arrowSize * 0.5f, center.y - arrowSize * 0.5f, arrowSize, arrowSize), _arrowTex);
             GUI.color = prevColor;
 
             // 9. Badge Utara [U] ikut berputar mengelilingi tepi oktagon (gaya kompas GTA!)
@@ -375,13 +424,28 @@ namespace PulauKabut.UI
             {
                 _northBadgeStyle = StylizedUITheme.CreateKeycapStyle(11);
             }
-            float northX = -sinY * (mapSize * 0.5f - 2f);
-            float northY = -cosY * (mapSize * 0.5f - 2f);
+            if (_maxHintStyle == null)
+            {
+                _maxHintStyle = StylizedUITheme.CreatePillStyle(13, TextAnchor.MiddleCenter, 14, 6);
+                _maxHintStyle.normal.textColor = StylizedUITheme.CreamText;
+            }
+            float northX = -sinY * (activeMapSize * 0.5f - 2f);
+            float northY = -cosY * (activeMapSize * 0.5f - 2f);
             GUI.Box(new Rect(center.x + northX - 12f, center.y + northY - 10f, 24f, 20f), "U", _northBadgeStyle);
+
+            if (_isMaximized)
+            {
+                const string legend = "[M] Perkecil Peta  ·  Emas: Misi  ·  Oranye: Pelita  ·  Mint: NPC  ·  Kuning: Pecahan";
+                GUI.Box(new Rect((Screen.width - 560f) * 0.5f, mapRect.yMax + 10f, 560f, 32f), legend, _maxHintStyle);
+            }
+            else
+            {
+                GUI.Box(new Rect(mapRect.x, mapRect.yMax + 4f, 86f, 22f), "[M] Peta", _northBadgeStyle);
+            }
         }
 
         private void DrawRotatedBlip(Vector3 targetPos, Vector3 playerPos, float cosY, float sinY,
-            Vector2 center, float innerRadius, float size, Color color, bool clampToEdge)
+            Vector2 center, float innerRadius, float activeWorldRadius, float size, Color color, bool clampToEdge)
         {
             float dx = targetPos.x - playerPos.x;
             float dz = targetPos.z - playerPos.z;
@@ -390,7 +454,7 @@ namespace PulauKabut.UI
             float rx = dx * cosY - dz * sinY;
             float rz = dx * sinY + dz * cosY;
 
-            Vector2 offset = new Vector2(rx / worldRadius, -rz / worldRadius) * innerRadius;
+            Vector2 offset = new Vector2(rx / activeWorldRadius, -rz / activeWorldRadius) * innerRadius;
             float dist = offset.magnitude;
 
             if (dist > innerRadius)

@@ -22303,6 +22303,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PulauKabut.UI.MinimapHUD
   mapSize: 144
   worldRadius: 52
+  maximizedWorldRadius: 115
   playerTransform: {fileID: 30494053}
   showMinimap: 1
 --- !u!114 &502529027
@@ -98035,6 +98036,100 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 6c681db23dcb6ce459a1366502c6f1ed, type: 3}
   m_PrefabInstance: {fileID: 2143855769}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &7996849075869742116
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3399841548752498364, guid: fc2b9a52688142d458afedf1aa0e34b4, type: 3}
+      propertyPath: m_Name
+      value: --- PULAU RAHASIA & SHORTCUT ---
+      objectReference: {fileID: 0}
+    - target: {fileID: 8318790098871280882, guid: fc2b9a52688142d458afedf1aa0e34b4, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -40.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8318790098871280882, guid: fc2b9a52688142d458afedf1aa0e34b4, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8318790098871280882, guid: fc2b9a52688142d458afedf1aa0e34b4, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -58
+      objectReference: {fileID: 0}
+    - target: {fileID: 8318790098871280882, guid: fc2b9a52688142d458afedf1aa0e34b4, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 8318790098871280882, guid: fc2b9a52688142d458afedf1aa0e34b4, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8318790098871280882, guid: fc2b9a52688142d458afedf1aa0e34b4, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 8318790098871280882, guid: fc2b9a52688142d458afedf1aa0e34b4, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8318790098871280882, guid: fc2b9a52688142d458afedf1aa0e34b4, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8318790098871280882, guid: fc2b9a52688142d458afedf1aa0e34b4, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8318790098871280882, guid: fc2b9a52688142d458afedf1aa0e34b4, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 673351809933167001, guid: fc2b9a52688142d458afedf1aa0e34b4, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7996849075869742118}
+  m_SourcePrefab: {fileID: 100100000, guid: fc2b9a52688142d458afedf1aa0e34b4, type: 3}
+--- !u!1 &7996849075869742117 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 673351809933167001, guid: fc2b9a52688142d458afedf1aa0e34b4, type: 3}
+  m_PrefabInstance: {fileID: 7996849075869742116}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7996849075869742118
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7996849075869742117}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -98046,3 +98141,4 @@ SceneRoots:
   - {fileID: 1609045357}
   - {fileID: 30494052}
   - {fileID: 112088877}
+  - {fileID: 7996849075869742116}
