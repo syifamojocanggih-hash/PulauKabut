@@ -21,17 +21,16 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: MAT_ZM_Ocean
-  m_Shader: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+  m_Shader: {fileID: 4800000, guid: bbd8a1c96f8fc6c4eacc8578bcf82857, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
+  m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
-  stringTagMap:
-    RenderType: Opaque
+  stringTagMap: {}
   disabledShaderPasses:
   - MOTIONVECTORS
   m_LockedProperties: 
@@ -106,34 +105,52 @@ Material:
     - _ClearCoatSmoothness: 0
     - _Cull: 2
     - _Cutoff: 0.5
+    - _DepthMaxDistance: 5.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EnvironmentReflections: 1
+    - _FoamCutoff: 0.4
+    - _FoamDistance: 1.75
+    - _FoamSpeed: 0.45
+    - _FresnelPower: 3.4
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
     - _Metallic: 0
     - _OcclusionStrength: 1
+    - _OpacityMin: 0.68
     - _Parallax: 0.005
     - _QueueOffset: 0
     - _ReceiveShadows: 1
+    - _RefractionStrength: 0.012
+    - _RippleScale: 0.16
+    - _RippleSpeed: 0.24
+    - _RippleStrength: 0.36
     - _ScreenSpaceReflections: 1
     - _ScreenSpaceReflectionsContributeTransparent: 1
-    - _Smoothness: 0.12
+    - _Smoothness: 80
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
+    - _SpecularStrength: 0.58
     - _SrcBlend: 1
     - _SrcBlendAlpha: 1
     - _Surface: 0
+    - _WaveAmplitude: 0.03
+    - _WaveFrequency: 0.32
+    - _WaveSpeed: 1.05
     - _WorkflowMode: 1
     - _XRMotionVectorsPass: 1
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 0.42745098, g: 0.59607846, b: 0.70980394, a: 1}
     - _Color: {r: 0.42745095, g: 0.5960784, b: 0.70980394, a: 1}
+    - _DeepColor: {r: 0.24, g: 0.5, b: 0.68, a: 0.96}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _FoamColor: {r: 0.95, g: 0.98, b: 1, a: 0.92}
+    - _ShallowColor: {r: 0.45, g: 0.8, b: 0.84, a: 0.78}
+    - _SkyTint: {r: 0.76, g: 0.88, b: 0.97, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

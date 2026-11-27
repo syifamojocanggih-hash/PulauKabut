@@ -23,6 +23,7 @@ namespace PulauKabut.UI
         private static Texture2D _solidTex;
         private static Texture2D _slantSegTex;
         private static Texture2D _lanternIconTex;
+        private static Texture2D _unlockGlowTex;
         private static Texture2D _pentagonIconTex;
         private static Texture2D _hexagonIconTex;
         private static Texture2D _houseIconTex;
@@ -174,6 +175,39 @@ namespace PulauKabut.UI
             }
         }
 
+        /// <summary>Aura cahaya radial emas lembut untuk latar showcase item baru di tengah layar.</summary>
+        public static Texture2D UnlockGlowTex
+        {
+            get
+            {
+                if (_unlockGlowTex == null)
+                {
+                    const int s = 128;
+                    float h = s * 0.5f;
+                    _unlockGlowTex = new Texture2D(s, s, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
+                    Color[] px = new Color[s * s];
+                    for (int y = 0; y < s; y++)
+                    {
+                        for (int x = 0; x < s; x++)
+                        {
+                            float dx = (x + 0.5f - h) / h;
+                            float dy = (y + 0.5f - h) / h;
+                            float r = Mathf.Clamp01(Mathf.Sqrt(dx * dx + dy * dy));
+                            float core = Mathf.Pow(1f - r, 2.2f);
+                            float angle = Mathf.Atan2(dy, dx);
+                            float rays = 0.85f + 0.15f * Mathf.Cos(angle * 8f);
+                            float a = Mathf.Clamp01(core * rays);
+                            Color col = Color.Lerp(GoldAccent, new Color(1f, 0.96f, 0.78f, 1f), core);
+                            px[y * s + x] = new Color(col.r, col.g, col.b, a * 0.75f);
+                        }
+                    }
+                    _unlockGlowTex.SetPixels(px);
+                    _unlockGlowTex.Apply();
+                }
+                return _unlockGlowTex;
+            }
+        }
+
         /// <summary>Ikon kristal segilima mint untuk Pecahan Cahaya.</summary>
         public static Texture2D PentagonIconTex => _pentagonIconTex != null ? _pentagonIconTex : (_pentagonIconTex = CreatePolygonIcon(5, MintAccent));
 
@@ -247,39 +281,42 @@ namespace PulauKabut.UI
         }
 
         public static Texture2D GoldPanelTex => _goldPanelTex != null ? _goldPanelTex : (_goldPanelTex = CreateChamferTexture(
-            64, 48, 12, 5, 2.4f,
-            new Color(0.090f, 0.251f, 0.290f, 0.94f), // #17404a
-            new Color(0.047f, 0.133f, 0.161f, 0.96f), // #0c2229
+            128, 96, 22, 10, 4.2f,
+            new Color(0.090f, 0.251f, 0.290f, 0.95f), // #17404a
+            new Color(0.047f, 0.133f, 0.161f, 0.97f), // #0c2229
             new Color(1.000f, 0.761f, 0.294f, 1.00f), // #ffc24b
             new Color(0.541f, 0.333f, 0.133f, 1.00f)));// #8a5522
 
         public static Texture2D GoldPanelHoverTex => _goldPanelHoverTex != null ? _goldPanelHoverTex : (_goldPanelHoverTex = CreateChamferTexture(
-            64, 48, 12, 5, 2.4f,
+            128, 96, 22, 10, 4.2f,
             new Color(0.130f, 0.335f, 0.380f, 0.97f),
             new Color(0.075f, 0.195f, 0.235f, 0.98f),
             new Color(1.000f, 0.860f, 0.450f, 1.00f),
             new Color(0.750f, 0.500f, 0.200f, 1.00f)));
 
         public static Texture2D MintPanelTex => _mintPanelTex != null ? _mintPanelTex : (_mintPanelTex = CreateChamferTexture(
-            64, 48, 11, 4, 2.2f,
-            new Color(0.078f, 0.212f, 0.247f, 0.93f), // #14363f
-            new Color(0.047f, 0.133f, 0.161f, 0.95f), // #0c2229
+            128, 96, 20, 8, 3.8f,
+            new Color(0.078f, 0.212f, 0.247f, 0.94f), // #14363f
+            new Color(0.047f, 0.133f, 0.161f, 0.96f), // #0c2229
             new Color(0.490f, 0.953f, 0.847f, 0.85f), // #7df3d8
             new Color(0.157f, 0.353f, 0.392f, 0.90f)));
 
         public static Texture2D GoldKeycapTex => _goldKeycapTex != null ? _goldKeycapTex : (_goldKeycapTex = CreateChamferTexture(
-            36, 28, 5, 2, 1.2f,
+            72, 56, 10, 4, 2.2f,
             new Color(1.000f, 0.878f, 0.541f, 1.00f), // #ffe08a
             new Color(1.000f, 0.761f, 0.294f, 1.00f), // #ffc24b
             new Color(0.600f, 0.380f, 0.120f, 1.00f),
             new Color(0.450f, 0.270f, 0.080f, 1.00f)));
 
         public static Texture2D MintBadgeTex => _mintBadgeTex != null ? _mintBadgeTex : (_mintBadgeTex = CreateChamferTexture(
-            36, 28, 5, 2, 1.0f,
+            72, 56, 10, 4, 2.0f,
             new Color(0.490f, 0.953f, 0.847f, 1.00f),
             new Color(0.320f, 0.800f, 0.720f, 1.00f),
             new Color(0.200f, 0.600f, 0.540f, 1.00f),
             new Color(0.150f, 0.450f, 0.420f, 1.00f)));
+
+        private static FontStyle BodyFontStyle => BodyFont != null ? FontStyle.Normal : FontStyle.Bold;
+        private static FontStyle HeadingFontStyle => HeadingFont != null ? FontStyle.Normal : FontStyle.Bold;
 
         public static GUIStyle CreateGoldPanelStyle(int fontSize = 13, TextAnchor alignment = TextAnchor.UpperLeft, int padH = 14, int padV = 10)
         {
@@ -288,9 +325,9 @@ namespace PulauKabut.UI
                 font = BodyFont,
                 alignment = alignment,
                 fontSize = fontSize,
-                fontStyle = FontStyle.Bold,
+                fontStyle = BodyFontStyle,
                 wordWrap = true,
-                border = new RectOffset(16, 16, 16, 16),
+                border = new RectOffset(30, 30, 30, 30),
                 padding = new RectOffset(padH, padH, padV, padV)
             };
             s.normal.background = GoldPanelTex;
@@ -305,9 +342,9 @@ namespace PulauKabut.UI
                 font = BodyFont,
                 alignment = alignment,
                 fontSize = fontSize,
-                fontStyle = FontStyle.Bold,
+                fontStyle = BodyFontStyle,
                 wordWrap = true,
-                border = new RectOffset(14, 14, 14, 14),
+                border = new RectOffset(26, 26, 26, 26),
                 padding = new RectOffset(padH, padH, padV, padV)
             };
             s.normal.background = MintPanelTex;
@@ -322,10 +359,10 @@ namespace PulauKabut.UI
                 font = BodyFont,
                 alignment = alignment,
                 fontSize = fontSize,
-                fontStyle = FontStyle.Bold,
+                fontStyle = BodyFontStyle,
                 wordWrap = false,
                 clipping = TextClipping.Overflow,
-                border = new RectOffset(16, 16, 14, 14),
+                border = new RectOffset(30, 30, 26, 26),
                 padding = new RectOffset(padH, padH, padV, padV)
             };
             s.normal.background = GoldPanelTex;
@@ -344,8 +381,8 @@ namespace PulauKabut.UI
                 font = HeadingFont,
                 alignment = TextAnchor.MiddleCenter,
                 fontSize = fontSize,
-                fontStyle = FontStyle.Bold,
-                border = new RectOffset(7, 7, 6, 6),
+                fontStyle = HeadingFontStyle,
+                border = new RectOffset(14, 14, 12, 12),
                 padding = new RectOffset(6, 6, 2, 2)
             };
             s.normal.background = GoldKeycapTex;
@@ -360,8 +397,8 @@ namespace PulauKabut.UI
                 font = HeadingFont,
                 alignment = TextAnchor.MiddleCenter,
                 fontSize = fontSize,
-                fontStyle = FontStyle.Bold,
-                border = new RectOffset(7, 7, 6, 6),
+                fontStyle = HeadingFontStyle,
+                border = new RectOffset(14, 14, 12, 12),
                 padding = new RectOffset(6, 6, 2, 2)
             };
             s.normal.background = MintBadgeTex;
@@ -375,7 +412,7 @@ namespace PulauKabut.UI
             {
                 font = HeadingFont,
                 fontSize = fontSize,
-                fontStyle = FontStyle.Bold,
+                fontStyle = HeadingFontStyle,
                 alignment = alignment
             };
             s.normal.textColor = color;
@@ -388,7 +425,7 @@ namespace PulauKabut.UI
             {
                 font = BodyFont,
                 fontSize = fontSize,
-                fontStyle = FontStyle.Bold,
+                fontStyle = BodyFontStyle,
                 alignment = alignment,
                 wordWrap = wordWrap
             };

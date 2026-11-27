@@ -36,11 +36,19 @@ namespace PulauKabut.UI
         private readonly StringBuilder _listBuilder = new StringBuilder(320);
 
         private string _bannerText = string.Empty;
-        private string _unlockBannerText = string.Empty;
+        private string _unlockTitle = string.Empty;
+        private string _unlockSubtitle = string.Empty;
+        private Texture2D _unlockIcon;
+        private Texture2D _cachedLanternIcon;
         private string _cachedListText = string.Empty;
         private Transform _cameraTransform;
         private GUIStyle _bannerStyle;
-        private GUIStyle _unlockBannerStyle;
+        private GUIStyle _unlockCardStyle;
+        private GUIStyle _unlockTagStyle;
+        private GUIStyle _unlockTitleStyle;
+        private GUIStyle _unlockTitleShadowStyle;
+        private GUIStyle _unlockSubStyle;
+        private GUIStyle _unlockHintStyle;
         private GUIStyle _listStyle;
         private GUIStyle _headerStyle;
         private GUIStyle _keyStyle;
@@ -51,6 +59,7 @@ namespace PulauKabut.UI
         private string _distText = "0 m";
         private float _bannerTimer;
         private float _unlockBannerTimer;
+        private float _unlockElapsed;
         private float _refreshTimer;
 
         /// <summary>Transform tujuan misi aktif saat ini (dipakai juga oleh MinimapHUD).</summary>
@@ -105,7 +114,16 @@ namespace PulauKabut.UI
 
             if (_unlockBannerTimer > 0f)
             {
+                _unlockElapsed += Time.unscaledDeltaTime;
                 _unlockBannerTimer = Mathf.Max(0f, _unlockBannerTimer - Time.unscaledDeltaTime);
+
+                if (_unlockElapsed > 0.55f && Keyboard.current != null &&
+                    (Keyboard.current.fKey.wasPressedThisFrame ||
+                     Keyboard.current.eKey.wasPressedThisFrame ||
+                     Keyboard.current.spaceKey.wasPressedThisFrame))
+                {
+                    _unlockBannerTimer = 0f;
+                }
             }
 
             if (ShowMissionList)
@@ -155,12 +173,35 @@ namespace PulauKabut.UI
             _bannerTimer = bannerDisplayDuration;
         }
 
-        /// <summary>Menampilkan banner notifikasi pembukaan item/fitur di bagian atas layar (misal "Lentera Unlocked").</summary>
-        public void ShowUnlockNotification(string message, float duration = 0f)
+        /// <summary>Menampilkan popup showcase item/fitur baru di tengah layar beserta gambarnya (misal "Lentera Unlocked").</summary>
+        public void ShowUnlockNotification(string title, string subtitle = null, Texture2D icon = null, float duration = 0f)
         {
-            if (string.IsNullOrEmpty(message)) return;
-            _unlockBannerText = message;
-            _unlockBannerTimer = duration > 0f ? duration : bannerDisplayDuration;
+            if (string.IsNullOrEmpty(title)) return;
+
+            _unlockTitle = title;
+            _unlockSubtitle = string.IsNullOrEmpty(subtitle)
+                ? "Tekan [F] untuk menyalakan Lentera"
+                : subtitle;
+
+            if (icon != null)
+            {
+                _unlockIcon = icon;
+            }
+            else if (title.IndexOf("Lentera", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                if (_cachedLanternIcon == null)
+                {
+                    _cachedLanternIcon = Resources.Load<Texture2D>("UI/Icon_HandLantern");
+                }
+                _unlockIcon = _cachedLanternIcon != null ? _cachedLanternIcon : StylizedUITheme.LanternIconTex;
+            }
+            else
+            {
+                _unlockIcon = StylizedUITheme.PentagonIconTex;
+            }
+
+            _unlockElapsed = 0f;
+            _unlockBannerTimer = duration > 0f ? duration : Mathf.Max(6.0f, bannerDisplayDuration);
         }
 
         private void RebuildMissionListText()
@@ -189,24 +230,14 @@ namespace PulauKabut.UI
 
             EnsureStyles();
 
-            // 1a. Banner notifikasi unlock item/fitur di bagian paling atas layar
-            bool hasUnlockBanner = _unlockBannerTimer > 0f && !string.IsNullOrEmpty(_unlockBannerText);
+            // 1a. Showcase popup item baru di TENGAH LAYAR (Lentera Unlocked + gambar lentera!)
+            bool hasUnlockBanner = _unlockBannerTimer > 0f && !string.IsNullOrEmpty(_unlockTitle);
             if (hasUnlockBanner)
             {
-                float alpha = _unlockBannerTimer < 0.8f ? Mathf.Clamp01(_unlockBannerTimer / 0.8f) : 1f;
-                Color prev = GUI.color;
-                GUI.color = new Color(1f, 1f, 1f, alpha);
-
-                Vector2 textSize = _unlockBannerStyle.CalcSize(new GUIContent(_unlockBannerText));
-                float w = Mathf.Clamp(textSize.x + 42f, 240f, Screen.width - 280f);
-                const float h = 42f;
-                Rect rect = new Rect((Screen.width - w) * 0.5f, 14f, w, h);
-                GUI.Box(rect, _unlockBannerText, _unlockBannerStyle);
-
-                GUI.color = prev;
+                DrawUnlockShowcaseCard();
             }
 
-            // 1b. Banner notifikasi misi baru (chamfered auto-width, muncul sekali lalu memudar halus!)
+            // 1b. Banner notifikasi misi baru (chamfered auto-width, muncul sekali di atas lalu memudar halus!)
             if (_bannerTimer > 0f && !string.IsNullOrEmpty(_bannerText))
             {
                 float alpha = _bannerTimer < 0.8f ? Mathf.Clamp01(_bannerTimer / 0.8f) : 1f;
@@ -216,8 +247,7 @@ namespace PulauKabut.UI
                 Vector2 textSize = _bannerStyle.CalcSize(new GUIContent(_bannerText));
                 float w = Mathf.Clamp(textSize.x + 36f, 260f, Screen.width - 280f);
                 const float h = 42f;
-                float yPos = hasUnlockBanner ? 62f : 14f;
-                Rect rect = new Rect((Screen.width - w) * 0.5f, yPos, w, h);
+                Rect rect = new Rect((Screen.width - w) * 0.5f, 14f, w, h);
                 GUI.Box(rect, _bannerText, _bannerStyle);
 
                 GUI.color = prev;
@@ -268,6 +298,79 @@ namespace PulauKabut.UI
             }
         }
 
+        private void DrawUnlockShowcaseCard()
+        {
+            float fadeOut = _unlockBannerTimer < 0.7f ? Mathf.Clamp01(_unlockBannerTimer / 0.7f) : 1f;
+            float fadeIn = Mathf.Clamp01(_unlockElapsed / 0.22f);
+            float alpha = Mathf.Min(fadeIn, fadeOut);
+            float pop = Mathf.SmoothStep(0.92f, 1.0f, fadeIn);
+
+            Color prev = GUI.color;
+
+            // Lapisan redup lembut di seluruh layar agar fokus tertuju ke tengah
+            GUI.color = new Color(0.02f, 0.07f, 0.09f, 0.48f * alpha);
+            GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), StylizedUITheme.SolidTex);
+
+            GUI.color = new Color(1f, 1f, 1f, alpha);
+
+            float cardW = Mathf.Clamp(440f, 340f, Screen.width - 64f) * pop;
+            float cardH = Mathf.Clamp(330f, 280f, Screen.height - 64f) * pop;
+            Rect card = new Rect((Screen.width - cardW) * 0.5f, (Screen.height - cardH) * 0.5f - 8f, cardW, cardH);
+
+            if (GUI.Button(card, GUIContent.none, _unlockCardStyle) && _unlockElapsed > 0.55f)
+            {
+                _unlockBannerTimer = 0f;
+            }
+
+            // Badge mint di atas: ITEM BARU DIPEROLEH
+            const float tagW = 196f;
+            const float tagH = 26f;
+            GUI.Box(new Rect(card.x + (card.width - tagW) * 0.5f, card.y + 18f, tagW, tagH), "ITEM BARU DIPEROLEH", _unlockTagStyle);
+
+            // Garis pemisah emas halus
+            GUI.color = new Color(StylizedUITheme.GoldAccent.r, StylizedUITheme.GoldAccent.g, StylizedUITheme.GoldAccent.b, 0.55f * alpha);
+            GUI.DrawTexture(new Rect(card.x + 36f, card.y + 54f, card.width - 72f, 2f), StylizedUITheme.SolidTex);
+
+            // Aura cahaya radial emas berdenyut di belakang gambar lentera
+            float glowPulse = 0.80f + 0.20f * Mathf.Sin(Time.unscaledTime * 3.2f);
+            float glowSize = 180f;
+            float bobY = Mathf.Sin(Time.unscaledTime * 2.4f) * 4f;
+            float iconCenterY = card.y + 136f + bobY;
+
+            GUI.color = new Color(1f, 1f, 1f, glowPulse * alpha);
+            GUI.DrawTexture(
+                new Rect(card.x + (card.width - glowSize) * 0.5f, iconCenterY - glowSize * 0.5f, glowSize, glowSize),
+                StylizedUITheme.UnlockGlowTex,
+                ScaleMode.ScaleToFit);
+
+            // Gambar Lentera resolusi tinggi
+            if (_unlockIcon != null)
+            {
+                const float iconSize = 136f;
+                GUI.color = new Color(1f, 1f, 1f, alpha);
+                GUI.DrawTexture(
+                    new Rect(card.x + (card.width - iconSize) * 0.5f, iconCenterY - iconSize * 0.5f, iconSize, iconSize),
+                    _unlockIcon,
+                    ScaleMode.ScaleToFit);
+            }
+
+            // Judul besar emas + drop shadow
+            Rect titleRect = new Rect(card.x + 20f, card.y + 216f, card.width - 40f, 38f);
+            GUI.color = new Color(1f, 1f, 1f, alpha);
+            GUI.Label(new Rect(titleRect.x + 1.5f, titleRect.y + 2f, titleRect.width, titleRect.height), _unlockTitle.ToUpperInvariant(), _unlockTitleShadowStyle);
+            GUI.Label(titleRect, _unlockTitle.ToUpperInvariant(), _unlockTitleStyle);
+
+            // Subjudul panduan penggunaan
+            Rect subRect = new Rect(card.x + 28f, card.y + 252f, card.width - 56f, 34f);
+            GUI.Label(subRect, _unlockSubtitle, _unlockSubStyle);
+
+            // Petunjuk singkat di footer
+            Rect hintRect = new Rect(card.x + 24f, card.yMax - 34f, card.width - 48f, 22f);
+            GUI.Label(hintRect, "[E / Spasi / Klik] tutup", _unlockHintStyle);
+
+            GUI.color = prev;
+        }
+
         private void EnsureStyles()
         {
             if (_bannerStyle == null)
@@ -276,10 +379,17 @@ namespace PulauKabut.UI
                 _bannerStyle.normal.textColor = StylizedUITheme.GoldAccent;
             }
 
-            if (_unlockBannerStyle == null)
+            if (_unlockCardStyle == null)
             {
-                _unlockBannerStyle = StylizedUITheme.CreatePillStyle(16, TextAnchor.MiddleCenter, 20, 8);
-                _unlockBannerStyle.normal.textColor = StylizedUITheme.MintAccent;
+                _unlockCardStyle = StylizedUITheme.CreateGoldPanelStyle(14, TextAnchor.UpperCenter, 16, 16);
+                _unlockCardStyle.hover.background = StylizedUITheme.GoldPanelTex;
+                _unlockCardStyle.active.background = StylizedUITheme.GoldPanelTex;
+
+                _unlockTagStyle = StylizedUITheme.CreateMintBadgeStyle(12);
+                _unlockTitleStyle = StylizedUITheme.CreateHeadingLabelStyle(24, StylizedUITheme.GoldAccent, TextAnchor.MiddleCenter);
+                _unlockTitleShadowStyle = StylizedUITheme.CreateHeadingLabelStyle(24, new Color(0f, 0f, 0f, 0.55f), TextAnchor.MiddleCenter);
+                _unlockSubStyle = StylizedUITheme.CreateBodyLabelStyle(14, StylizedUITheme.CreamText, TextAnchor.MiddleCenter, wordWrap: true);
+                _unlockHintStyle = StylizedUITheme.CreateBodyLabelStyle(12, StylizedUITheme.SeafoamText, TextAnchor.MiddleCenter);
             }
 
             if (_listStyle == null)

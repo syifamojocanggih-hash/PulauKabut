@@ -49,6 +49,7 @@ namespace PulauKabut.UI
         private Texture2D _fowTex;
         private Color32[] _fowPixels;
         private float _fowStampTimer;
+        private float _renderTimer;
         private Vector2 _lastStampXZ = new Vector2(9999f, 9999f);
 
         private Texture2D _octFrameTex;
@@ -94,6 +95,11 @@ namespace PulauKabut.UI
             if (playerTransform != null)
             {
                 StampExploredArea(playerTransform.position, 13f);
+                Vector3 p = playerTransform.position;
+                _minimapCam.transform.position = new Vector3(p.x, p.y + 65f, p.z);
+                float yaw = _cameraTransform != null ? _cameraTransform.eulerAngles.y : playerTransform.eulerAngles.y;
+                _minimapCam.transform.rotation = Quaternion.Euler(90f, yaw, 0f);
+                _minimapCam.Render();
             }
         }
 
@@ -185,6 +191,7 @@ namespace PulauKabut.UI
             _minimapCam.backgroundColor = new Color(0.08f, 0.21f, 0.25f, 1f);
             _minimapCam.targetTexture = _minimapRT;
             _minimapCam.depth = -10f;
+            _minimapCam.enabled = false; // Dirender manual ~16 Hz di LateUpdate agar tidak membebani tiap frame
             // Sembunyikan layer Player (6) dari kamera minimap karena kita pakai panah emas di tengah
             _minimapCam.cullingMask = ~(1 << 6);
 
@@ -214,6 +221,16 @@ namespace PulauKabut.UI
             _minimapCam.transform.position = new Vector3(p.x, p.y + 65f, p.z);
             _minimapCam.transform.rotation = Quaternion.Euler(90f, camYaw, 0f);
             _minimapCam.orthographicSize = worldRadius;
+
+            if (showMinimap)
+            {
+                _renderTimer += Time.unscaledDeltaTime;
+                if (_renderTimer >= 0.033f)
+                {
+                    _renderTimer = 0f;
+                    _minimapCam.Render();
+                }
+            }
 
             // Buka peta (Fog of War) secara bertahap hanya pada area yang sudah dijelajahi pemain
             _fowStampTimer += Time.deltaTime;

@@ -29,6 +29,9 @@ namespace PulauKabut.Lantern
         [Tooltip("Jika dicentang, objek tetap aktif permanen setelah sekali diterangi lentera.")]
         [SerializeField] private bool stayRevealedOnceLit = false;
 
+        [Tooltip("Jika dicentang (logika real), collider tetap padat/nyata di rawa; cahaya hanya menyingkap visualnya dari samaran kabut.")]
+        [SerializeField] private bool keepColliderAlwaysEnabled = false;
+
         private bool _isRevealed;
         private bool _hasBeenRevealedPermanently;
 
@@ -89,7 +92,7 @@ namespace PulauKabut.Lantern
 
             if (targetCollider != null)
             {
-                targetCollider.enabled = _isRevealed;
+                targetCollider.enabled = keepColliderAlwaysEnabled || _isRevealed;
             }
 
             if (targetRenderer != null)

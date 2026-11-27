@@ -117,7 +117,9 @@ namespace PulauKabut.Dialog
             if (shouldGrantLantern && LanternController.ActiveLantern != null && !LanternController.ActiveLantern.HasLantern)
             {
                 LanternController.ActiveLantern.GrantLantern(turnOnImmediately: false);
-                ObjectiveGuide.Instance?.ShowUnlockNotification("Lentera Unlocked");
+                ObjectiveGuide.Instance?.ShowUnlockNotification(
+                    "Lentera Unlocked",
+                    "Tekan [F] untuk menyalakan Lentera");
             }
             if (nextObjectiveTarget != null && ObjectiveGuide.Instance != null)
             {
