@@ -162,8 +162,8 @@ namespace PulauKabut.Core
                 _mintNumStyle = StylizedUITheme.CreateHeadingLabelStyle(15, StylizedUITheme.MintAccent, TextAnchor.MiddleRight);
             }
 
-            // Kartu status persis Hud.dc.html (ikon segilima mint, segienam emas, rumah krem + garis pemisah + 5 berlian)
-            Rect card = new Rect(14f, 168f, 232f, 152f);
+            // Kartu status persis Hud.dc.html (diberi ruang 32px di bawah minimap untuk badge [M] Peta!)
+            Rect card = new Rect(14f, 190f, 232f, 152f);
             GUI.Box(card, GUIContent.none, _hudStyle);
 
             float ix = card.x + 14f;

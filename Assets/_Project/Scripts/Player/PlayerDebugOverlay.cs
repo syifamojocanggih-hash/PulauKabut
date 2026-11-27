@@ -62,6 +62,9 @@ namespace PulauKabut.Player
         private float _elapsedTime;
         private float _currentFps;
         private bool _showPauseControls;
+        private bool _showPauseSaveSlots;
+        private string _saveFeedback = string.Empty;
+        private GameSaveData[] _pauseSlotCache;
 
         private void Awake()
         {
@@ -231,6 +234,10 @@ namespace PulauKabut.Player
                 {
                     DrawPauseControlsMenu();
                 }
+                else if (_showPauseSaveSlots)
+                {
+                    DrawPauseSaveMenu();
+                }
                 else
                 {
                     const float w = 340f;
@@ -257,12 +264,14 @@ namespace PulauKabut.Player
 
                     if (UI.StylizedUITheme.DrawKeyButton(new Rect(bx, card.y + 162f, bw, bh), "S", "Simpan Progres", _toggleBtnStyle, _keycapStyle, _btnTextStyle))
                     {
-                        SaveLoadBridge.Instance?.SaveNow();
+                        _pauseSlotCache = SaveSystem.LoadAllSlots();
+                        _saveFeedback = string.Empty;
+                        _showPauseSaveSlots = true;
                     }
 
                     if (UI.StylizedUITheme.DrawKeyButton(new Rect(bx, card.y + 212f, bw, bh), "Q", "Kembali ke Menu Utama", _toggleBtnStyle, _keycapStyle, _btnTextStyle))
                     {
-                        SaveLoadBridge.Instance?.SaveNow();
+                        SaveLoadBridge.Instance?.SaveAutoAtCheckpoint();
                         Time.timeScale = 1f;
                         Cursor.lockState = CursorLockMode.None;
                         Cursor.visible = true;
@@ -273,6 +282,7 @@ namespace PulauKabut.Player
             else
             {
                 _showPauseControls = false;
+                _showPauseSaveSlots = false;
             }
         }
 
@@ -346,6 +356,50 @@ namespace PulauKabut.Player
             if (UI.StylizedUITheme.DrawKeyButton(new Rect(card.x + 28f, card.yMax - 52f, card.width - 56f, 38f), "←", "Kembali", _toggleBtnStyle, _keycapStyle, _btnTextStyle))
             {
                 _showPauseControls = false;
+            }
+        }
+
+        private void DrawPauseSaveMenu()
+        {
+            const float w = 390f;
+            const float h = 356f;
+            Rect card = new Rect((Screen.width - w) * 0.5f, (Screen.height - h) * 0.5f, w, h);
+            GUI.Box(card, GUIContent.none, _boxStyle);
+
+            GUI.Label(new Rect(card.x, card.y + 14f, card.width, 30f), "SIMPAN PERJALANAN", _pauseStyle);
+
+            float bx = card.x + 24f;
+            float bw = card.width - 48f;
+            float ry = card.y + 52f;
+
+            GUI.Label(new Rect(bx, ry, bw, 22f), "Auto Save otomatis tersimpan di tiap Checkpoint.", _seafoamLabelStyle);
+            ry += 28f;
+
+            for (int slot = 1; slot <= 3; slot++)
+            {
+                GameSaveData d = (_pauseSlotCache != null && slot < _pauseSlotCache.Length) ? _pauseSlotCache[slot] : null;
+                string summary = d != null
+                    ? $"Perjalanan {slot} · {d.checkpointName} ({d.savedTimestamp})"
+                    : $"Perjalanan {slot} · Slot Kosong";
+
+                if (UI.StylizedUITheme.DrawKeyButton(new Rect(bx, ry, bw, 46f), slot.ToString(), summary, _toggleBtnStyle, _keycapStyle, _btnTextStyle))
+                {
+                    SaveLoadBridge.Instance?.SaveToSlot(slot, forceCheckpointPosition: false);
+                    SaveLoadBridge.Instance?.SaveAutoAtCheckpoint();
+                    _pauseSlotCache = SaveSystem.LoadAllSlots();
+                    _saveFeedback = $"Berhasil disimpan ke Perjalanan {slot}!";
+                }
+                ry += 56f;
+            }
+
+            if (!string.IsNullOrEmpty(_saveFeedback))
+            {
+                GUI.Label(new Rect(bx, ry + 2f, bw, 22f), _saveFeedback, _mintTitleStyle);
+            }
+
+            if (UI.StylizedUITheme.DrawKeyButton(new Rect(card.x + 28f, card.yMax - 52f, card.width - 56f, 38f), "←", "Kembali", _toggleBtnStyle, _keycapStyle, _btnTextStyle))
+            {
+                _showPauseSaveSlots = false;
             }
         }
 

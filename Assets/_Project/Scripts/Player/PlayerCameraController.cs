@@ -145,6 +145,12 @@ namespace PulauKabut.Player
                 _thirdPersonFollow.CameraDistance = settings.ThirdPersonDistance;
             }
 
+            if (_input == null)
+            {
+                _input = new PlayerInputActions();
+                _input.Player.Enable();
+            }
+
             // Baca input Look langsung tanpa alokasi memori (berlaku untuk Third-Person maupun First-Person)
             Vector2 lookInput = _input.Player.Look.ReadValue<Vector2>();
             float sensitivity = settings.LookSensitivity;

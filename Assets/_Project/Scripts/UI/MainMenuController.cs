@@ -7,14 +7,15 @@ namespace PulauKabut.UI
 {
     /// <summary>
     /// Layar Menu Utama Pulau Kabut bergaya chamfered teal-emas (selaras dengan HUD Lengkap)
-    /// dengan skala adaptif layar, dukungan keyboard + mouse, kartu progres petualangan,
-    /// dan diorama pesisir 3D hidup di sisi kanan.
+    /// dengan menu 4 slot save di bagian LANJUTKAN (slot paling atas = Auto Save di Checkpoint),
+    /// skala adaptif layar, dukungan keyboard + mouse, dan diorama pesisir 3D hidup di sisi kanan.
     /// </summary>
     public class MainMenuController : MonoBehaviour
     {
         private enum MenuPage
         {
             Main,
+            ContinueSlots,
             Options
         }
 
@@ -26,10 +27,10 @@ namespace PulauKabut.UI
         [SerializeField] private float swayAmplitudeDegrees = 11f;
         [SerializeField] private float swaySpeed = 0.22f;
 
-        private GameSaveData _cachedSave;
+        private GameSaveData[] _saveSlots = new GameSaveData[SaveSystem.TotalSlots];
+        private GameSaveData _autoSave;
         private MenuPage _currentPage = MenuPage.Main;
         private int _selectedIndex;
-        private int _hoveredIndex = -1;
         private string _activeDescription = string.Empty;
         private float _basePivotYaw;
 
@@ -40,25 +41,33 @@ namespace PulauKabut.UI
         private Texture2D _leftScrimTex;
         private Texture2D _lanternIcon;
         private Texture2D _menuBtnNormalTex;
+        private Texture2D _menuBtnActiveTex;
+        private Texture2D _slotEmptyTex;
         private GUIStyle _titleStyle;
         private GUIStyle _titleShadowStyle;
         private GUIStyle _subtitleBadgeStyle;
         private GUIStyle _btnNormalStyle;
         private GUIStyle _btnActiveStyle;
         private GUIStyle _cardStyle;
+        private GUIStyle _slotHoverStyle;
+        private GUIStyle _slotEmptyStyle;
+        private GUIStyle _slotEmptyTextStyle;
         private GUIStyle _cardHeaderStyle;
         private GUIStyle _cardBodyStyle;
         private GUIStyle _cardValueStyle;
         private GUIStyle _descStyle;
         private GUIStyle _footerStyle;
         private GUIStyle _keycapStyle;
+        private GUIStyle _slotBadgeMintStyle;
+        private GUIStyle _slotBadgeGoldStyle;
+        private GUIStyle _deleteBtnStyle;
 
         private void Start()
         {
             Time.timeScale = 1f;
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
-            _cachedSave = SaveSystem.Load();
+            RefreshSaveSlots();
 
             _masterVolume = PlayerPrefs.GetFloat("PK_MasterVolume", 1f);
             AudioListener.volume = _masterVolume;
@@ -74,10 +83,18 @@ namespace PulauKabut.UI
             }
         }
 
+        private void RefreshSaveSlots()
+        {
+            _saveSlots = SaveSystem.LoadAllSlots();
+            _autoSave = _saveSlots[SaveSystem.AutoSaveSlotIndex];
+        }
+
         private void OnDestroy()
         {
             if (_leftScrimTex != null) { Destroy(_leftScrimTex); _leftScrimTex = null; }
             if (_menuBtnNormalTex != null) { Destroy(_menuBtnNormalTex); _menuBtnNormalTex = null; }
+            if (_menuBtnActiveTex != null) { Destroy(_menuBtnActiveTex); _menuBtnActiveTex = null; }
+            if (_slotEmptyTex != null) { Destroy(_slotEmptyTex); _slotEmptyTex = null; }
         }
 
         private void Update()
@@ -91,7 +108,7 @@ namespace PulauKabut.UI
 
             if (Keyboard.current == null) return;
 
-            if (_currentPage == MenuPage.Options && Keyboard.current.escapeKey.wasPressedThisFrame)
+            if (_currentPage != MenuPage.Main && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 _currentPage = MenuPage.Main;
                 _selectedIndex = 0;
@@ -111,8 +128,12 @@ namespace PulauKabut.UI
 
         private int GetCurrentItemCount()
         {
-            if (_currentPage == MenuPage.Options) return 3;
-            return _cachedSave != null ? 4 : 3;
+            return _currentPage switch
+            {
+                MenuPage.ContinueSlots => SaveSystem.TotalSlots + 1, // 4 kotak save + tombol Kembali
+                MenuPage.Options => 4, // 3 setting + Kembali
+                _ => 4 // LANJUTKAN, MULAI BARU, PENGATURAN, KELUAR
+            };
         }
 
         private void OnGUI()
@@ -128,16 +149,15 @@ namespace PulauKabut.UI
             GUI.matrix = Matrix4x4.Scale(new Vector3(uiScale, uiScale, 1f));
 
             // 1. Gradasi deep-ocean-teal dari kiri ke kanan (tidak menutupi pulau & menara di kanan)
-            float scrimW = Mathf.Max(520f, vw * 0.48f);
+            float scrimW = Mathf.Max(540f, vw * 0.50f);
             GUI.DrawTexture(new Rect(0f, 0f, scrimW, vh), _leftScrimTex, ScaleMode.StretchToFill);
 
             float marginLeft = Mathf.Clamp(vw * 0.052f, 42f, 88f);
-            float topY = 44f;
+            float headerY = _currentPage == MenuPage.ContinueSlots
+                ? 28f
+                : Mathf.Clamp((vh - 500f) * 0.42f, 48f, 110f);
 
-            // 2. Badge mint kecil + Header Judul dengan ikon Lentera 3D & aura emas
-            GUI.Box(new Rect(marginLeft, topY, 214f, 24f), "PETUALANGAN LENTERA  ·  V0.1", _subtitleBadgeStyle);
-
-            float headerY = topY + 34f;
+            // 2. Header Judul dengan ikon Lentera 3D & aura emas
             float glowPulse = 0.78f + 0.22f * Mathf.Sin(Time.unscaledTime * 2.4f);
             Color prevCol = GUI.color;
             GUI.color = new Color(1f, 1f, 1f, glowPulse);
@@ -154,73 +174,65 @@ namespace PulauKabut.UI
 
             // Garis pemisah emas halus
             GUI.color = new Color(StylizedUITheme.GoldAccent.r, StylizedUITheme.GoldAccent.g, StylizedUITheme.GoldAccent.b, 0.65f);
-            GUI.DrawTexture(new Rect(marginLeft, headerY + 72f, 356f, 2f), StylizedUITheme.SolidTex);
+            GUI.DrawTexture(new Rect(marginLeft, headerY + 70f, 408f, 2f), StylizedUITheme.SolidTex);
             GUI.color = prevCol;
 
-            // 3. Tombol menu utama / pengaturan
-            float menuY = headerY + 90f;
-            if (_currentPage == MenuPage.Main)
+            // 3. Halaman aktif
+            float menuY = headerY + 82f;
+            switch (_currentPage)
             {
-                DrawMainPage(marginLeft, menuY, vh);
-            }
-            else
-            {
-                DrawOptionsPage(marginLeft, menuY, vh);
+                case MenuPage.Main:
+                    DrawMainPage(marginLeft, menuY, vh);
+                    break;
+                case MenuPage.ContinueSlots:
+                    DrawContinueSlotsPage(marginLeft, menuY, vh);
+                    break;
+                case MenuPage.Options:
+                    DrawOptionsPage(marginLeft, menuY, vh);
+                    break;
             }
 
-            // 4. Footer kiri & kanan bawah
-            float footerY = vh - 38f;
-            if (_currentPage == MenuPage.Options)
+            // 4. Footer kiri bawah (hanya tombol kembali saat di sub-halaman)
+            float footerY = vh - 36f;
+            if (_currentPage != MenuPage.Main)
             {
                 GUI.Box(new Rect(marginLeft, footerY, 44f, 24f), "ESC", _keycapStyle);
-                if (GUI.Button(new Rect(marginLeft + 52f, footerY - 1f, 120f, 26f), "KEMBALI", _footerStyle))
+                if (GUI.Button(new Rect(marginLeft + 52f, footerY - 1f, 140f, 26f), "KEMBALI KE MENU", _footerStyle))
                 {
                     _currentPage = MenuPage.Main;
                     _selectedIndex = 0;
                 }
             }
-            else
-            {
-                GUI.Label(new Rect(marginLeft, footerY, 380f, 24f), "Cozy Stylized 3D  ·  Target 60 FPS", _footerStyle);
-            }
-
-            // Hint navigasi ringkas di kanan bawah
-            float hintX = vw - 318f;
-            GUI.Box(new Rect(hintX, footerY, 44f, 22f), "W/S", _keycapStyle);
-            GUI.Label(new Rect(hintX + 50f, footerY - 1f, 76f, 24f), "Pilih", _footerStyle);
-            GUI.Box(new Rect(hintX + 122f, footerY, 64f, 22f), "ENTER", _keycapStyle);
-            GUI.Label(new Rect(hintX + 192f, footerY - 1f, 110f, 24f), "Konfirmasi", _footerStyle);
 
             GUI.matrix = prevMatrix;
         }
 
         private void DrawMainPage(float x, float startY, float vh)
         {
-            bool hasSave = _cachedSave != null;
             float y = startY;
             const float btnW = 356f;
             const float btnH = 44f;
             const float gap = 10f;
             int idx = 0;
-            _hoveredIndex = -1;
             _activeDescription = string.Empty;
 
-            if (hasSave)
+            if (DrawMenuItem(new Rect(x, y, btnW, btnH), idx++, "LANJUTKAN",
+                "Pilih salah satu dari 4 simpanan perjalanan (termasuk Auto Save di Checkpoint)."))
             {
-                if (DrawMenuItem(new Rect(x, y, btnW, btnH), idx++, "LANJUTKAN",
-                    "Lanjutkan petualangan menyibak kabut dari titik tersimpan."))
-                {
-                    string targetScene = string.IsNullOrEmpty(_cachedSave.lastSceneName) ? firstLevelScene : _cachedSave.lastSceneName;
-                    SceneManager.LoadScene(targetScene);
-                }
-                y += btnH + gap;
+                RefreshSaveSlots();
+                _currentPage = MenuPage.ContinueSlots;
+                _selectedIndex = 0;
+                return;
             }
+            y += btnH + gap;
 
             if (DrawMenuItem(new Rect(x, y, btnW, btnH), idx++, "MULAI BARU",
-                "Mulai perjalanan baru dari dermaga Desa Pelita."))
+                "Mulai perjalanan baru dari dermaga Desa Pelita (simpanan manual tetap aman)."))
             {
                 SaveSystem.DeleteSave();
+                SaveSystem.PendingLoadSlot = -2;
                 SceneManager.LoadScene(firstLevelScene);
+                return;
             }
             y += btnH + gap;
 
@@ -229,6 +241,7 @@ namespace PulauKabut.UI
             {
                 _currentPage = MenuPage.Options;
                 _selectedIndex = 0;
+                return;
             }
             y += btnH + gap;
 
@@ -241,30 +254,32 @@ namespace PulauKabut.UI
                 Application.Quit();
 #endif
             }
-            y += btnH + 22f;
+            y += btnH + 20f;
 
-            // Kartu Info / Progres Petualangan di kiri bawah agar komposisi kiri terasa seimbang & kaya
-            float cardH = hasSave ? 166f : 116f;
-            float maxCardY = vh - cardH - 52f;
+            // Kartu Info / Progres Petualangan (menampilkan ringkasan Auto Save / save terbaru jika ada)
+            GameSaveData previewSave = _autoSave ?? GetLatestAnySave();
+            bool hasSave = previewSave != null;
+            float cardH = hasSave ? 164f : 114f;
+            float maxCardY = vh - cardH - 50f;
             float cardY = Mathf.Min(y, maxCardY);
             Rect card = new Rect(x, cardY, btnW, cardH);
             GUI.Box(card, GUIContent.none, _cardStyle);
 
             if (hasSave)
             {
-                int shards = _cachedSave.collectedShards != null ? _cachedSave.collectedShards.Count : 0;
-                int memories = _cachedSave.collectedMemories != null ? _cachedSave.collectedMemories.Count : 0;
+                int shards = previewSave.collectedShards != null ? previewSave.collectedShards.Count : 0;
+                int memories = previewSave.collectedMemories != null ? previewSave.collectedMemories.Count : 0;
                 int stage = Mathf.Clamp(shards / 4, 0, 5);
 
                 GUI.Label(new Rect(card.x + 18f, card.y + 12f, 260f, 24f), "JEJAK PETUALANGAN", _cardHeaderStyle);
-                DrawStatRow(card.x + 18f, card.y + 42f, card.width - 36f, StylizedUITheme.PentagonIconTex, "Pecahan Cahaya", $"{shards} / 24");
-                DrawStatRow(card.x + 18f, card.y + 68f, card.width - 36f, StylizedUITheme.HexagonIconTex, "Serpihan Ingatan", $"{memories} / 15");
-                DrawStatRow(card.x + 18f, card.y + 94f, card.width - 36f, StylizedUITheme.HouseIconTex, "Desa Pelita", $"Tahap {stage}/5");
+                DrawStatRow(card.x + 18f, card.y + 40f, card.width - 36f, StylizedUITheme.PentagonIconTex, "Pecahan Cahaya", $"{shards} / 24");
+                DrawStatRow(card.x + 18f, card.y + 66f, card.width - 36f, StylizedUITheme.HexagonIconTex, "Serpihan Ingatan", $"{memories} / 15");
+                DrawStatRow(card.x + 18f, card.y + 92f, card.width - 36f, StylizedUITheme.HouseIconTex, "Desa Pelita", $"Tahap {stage}/5");
 
                 string desc = string.IsNullOrEmpty(_activeDescription)
-                    ? "Dermaga & Rawa Kunang menanti lenteramu."
+                    ? $"Checkpoint terakhir: {previewSave.checkpointName}"
                     : _activeDescription;
-                GUI.Label(new Rect(card.x + 18f, card.y + 122f, card.width - 36f, 36f), desc, _descStyle);
+                GUI.Label(new Rect(card.x + 18f, card.y + 120f, card.width - 36f, 36f), desc, _descStyle);
             }
             else
             {
@@ -274,6 +289,131 @@ namespace PulauKabut.UI
                     : _activeDescription;
                 GUI.Label(new Rect(card.x + 18f, card.y + 42f, card.width - 36f, 60f), desc, _descStyle);
             }
+        }
+
+        private void DrawContinueSlotsPage(float x, float startY, float vh)
+        {
+            GUI.Label(new Rect(x, startY - 4f, 436f, 24f), "LANJUTKAN PERJALANAN (4 SLOT)", _cardHeaderStyle);
+
+            float y = startY + 26f;
+            const float boxW = 436f;
+            const float boxH = 96f;
+            const float gap = 11f;
+            const float padX = 20f;
+
+            for (int i = 0; i < SaveSystem.TotalSlots; i++)
+            {
+                Rect slotRect = new Rect(x, y, boxW, boxH);
+                GameSaveData data = _saveSlots[i];
+                bool isAuto = i == SaveSystem.AutoSaveSlotIndex;
+                bool hasData = data != null;
+
+                bool isHovered = slotRect.Contains(Event.current.mousePosition);
+                if (isHovered)
+                {
+                    _selectedIndex = i;
+                }
+                bool isSelected = isHovered || _selectedIndex == i;
+
+                // Area tombol hapus di pojok kanan bawah untuk slot manual (Slot 1..3) agar tidak ikut memicu Load
+                Rect delRect = new Rect(slotRect.xMax - 74f, slotRect.yMax - 30f, 56f, 21f);
+                bool clickDelete = false;
+                if (!isAuto && hasData)
+                {
+                    clickDelete = GUI.Button(delRect, "Hapus", _deleteBtnStyle);
+                }
+
+                // Gambar kotak slot: jika kosong buat abu-abu polos + tulisan "Kosong" di tengah
+                if (!hasData)
+                {
+                    GUI.Box(slotRect, GUIContent.none, _slotEmptyStyle);
+                    GUI.Label(slotRect, "Kosong", _slotEmptyTextStyle);
+                }
+                else
+                {
+                    GUI.Box(slotRect, GUIContent.none, isSelected ? _slotHoverStyle : _cardStyle);
+
+                    // Judul slot & badge kanan atas (dengan jarak lega dari border & baris di bawahnya)
+                    string slotTitle = isAuto ? "AUTO SAVE · CHECKPOINT" : $"PERJALANAN {i}";
+                    GUI.Label(new Rect(slotRect.x + padX, slotRect.y + 12f, 260f, 22f), slotTitle, _cardHeaderStyle);
+
+                    if (isAuto)
+                    {
+                        GUI.Box(new Rect(slotRect.xMax - 106f, slotRect.y + 11f, 88f, 22f), "OTOMATIS", _slotBadgeMintStyle);
+                    }
+                    else
+                    {
+                        GUI.Box(new Rect(slotRect.xMax - 120f, slotRect.y + 11f, 102f, 22f), data.savedTimestamp, _slotBadgeGoldStyle);
+                    }
+
+                    // Detail isi slot dengan spasi vertikal yang lega agar nyaman dibaca
+                    int shards = data.collectedShards != null ? data.collectedShards.Count : 0;
+                    int memories = data.collectedMemories != null ? data.collectedMemories.Count : 0;
+                    int stage = Mathf.Clamp(shards / 4, 0, 5);
+                    string cpLabel = string.IsNullOrEmpty(data.checkpointName) ? "Dermaga" : data.checkpointName;
+                    string sceneLabel = string.IsNullOrEmpty(data.lastSceneName) ? firstLevelScene : data.lastSceneName;
+
+                    GUI.Label(new Rect(slotRect.x + padX, slotRect.y + 40f, boxW - padX * 2f, 20f),
+                        $"Checkpoint: {cpLabel}  ·  {sceneLabel}", _cardBodyStyle);
+
+                    GUI.Label(new Rect(slotRect.x + padX, slotRect.y + 64f, boxW - padX - 110f, 20f),
+                        $"Pecahan {shards}/24  ·  Ingatan {memories}/15  ·  Tahap {stage}/5", _descStyle);
+
+                    if (isAuto && !string.IsNullOrEmpty(data.savedTimestamp))
+                    {
+                        GUI.Label(new Rect(slotRect.xMax - 120f, slotRect.y + 64f, 102f, 20f), data.savedTimestamp, _cardValueStyle);
+                    }
+                }
+
+                // Gambar ulang tombol Hapus di atas box jika ada, supaya visual & kliknya tepat
+                if (!isAuto && hasData)
+                {
+                    if (GUI.Button(delRect, "Hapus", _deleteBtnStyle) || clickDelete)
+                    {
+                        SaveSystem.DeleteSlot(i);
+                        RefreshSaveSlots();
+                        return;
+                    }
+                }
+
+                bool clickedSlot = !clickDelete
+                    && Event.current.type == EventType.MouseDown
+                    && Event.current.button == 0
+                    && slotRect.Contains(Event.current.mousePosition)
+                    && !(!isAuto && hasData && delRect.Contains(Event.current.mousePosition));
+
+                bool confirmedByKey = isSelected && Keyboard.current != null &&
+                    (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame);
+
+                if (hasData && (clickedSlot || confirmedByKey))
+                {
+                    if (clickedSlot) Event.current.Use();
+                    SaveSystem.PendingLoadSlot = i;
+                    string targetScene = string.IsNullOrEmpty(data.lastSceneName) ? firstLevelScene : data.lastSceneName;
+                    SceneManager.LoadScene(targetScene);
+                    return;
+                }
+
+                y += boxH + gap;
+            }
+
+            // Tombol Kembali tepat di bawah ke-4 kotak
+            float backY = Mathf.Min(y + 4f, vh - 86f);
+            if (DrawMenuItem(new Rect(x, backY, 210f, 40f), SaveSystem.TotalSlots, "KEMBALI",
+                "Kembali ke Menu Utama."))
+            {
+                _currentPage = MenuPage.Main;
+                _selectedIndex = 0;
+            }
+        }
+
+        private GameSaveData GetLatestAnySave()
+        {
+            for (int i = 0; i < _saveSlots.Length; i++)
+            {
+                if (_saveSlots[i] != null) return _saveSlots[i];
+            }
+            return null;
         }
 
         private void DrawStatRow(float x, float y, float width, Texture2D icon, string label, string val)
@@ -293,7 +433,6 @@ namespace PulauKabut.UI
             const float btnH = 44f;
             const float gap = 10f;
             int idx = 0;
-            _hoveredIndex = -1;
             _activeDescription = string.Empty;
 
             int volPct = Mathf.RoundToInt(_masterVolume * 100f);
@@ -327,16 +466,25 @@ namespace PulauKabut.UI
                 _isFullscreen = !_isFullscreen;
                 Screen.fullScreen = _isFullscreen;
             }
-            y += btnH + 22f;
+            y += btnH + gap;
 
-            float cardY = Mathf.Min(y, vh - 148f);
-            Rect card = new Rect(x, cardY, btnW, 88f);
+            if (DrawMenuItem(new Rect(x, y, 210f, 40f), idx++, "KEMBALI",
+                "Kembali ke Menu Utama."))
+            {
+                _currentPage = MenuPage.Main;
+                _selectedIndex = 0;
+                return;
+            }
+            y += 40f + 16f;
+
+            float cardY = Mathf.Min(y, vh - 138f);
+            Rect card = new Rect(x, cardY, btnW, 84f);
             GUI.Box(card, GUIContent.none, _cardStyle);
-            GUI.Label(new Rect(card.x + 18f, card.y + 12f, 260f, 24f), "PENGATURAN", _cardHeaderStyle);
+            GUI.Label(new Rect(card.x + 18f, card.y + 10f, 260f, 24f), "PENGATURAN", _cardHeaderStyle);
             string desc = string.IsNullOrEmpty(_activeDescription)
                 ? "Klik opsi di atas atau tekan Esc untuk kembali."
                 : _activeDescription;
-            GUI.Label(new Rect(card.x + 18f, card.y + 40f, card.width - 36f, 40f), desc, _descStyle);
+            GUI.Label(new Rect(card.x + 18f, card.y + 38f, card.width - 36f, 40f), desc, _descStyle);
         }
 
         private bool DrawMenuItem(Rect rect, int index, string label, string description)
@@ -345,7 +493,6 @@ namespace PulauKabut.UI
             bool isHovered = rect.Contains(mousePos);
             if (isHovered)
             {
-                _hoveredIndex = index;
                 _selectedIndex = index;
                 _activeDescription = description;
             }
@@ -403,7 +550,23 @@ namespace PulauKabut.UI
 
             if (_menuBtnNormalTex == null)
             {
-                _menuBtnNormalTex = CreateSubtleMenuButtonTex();
+                _menuBtnNormalTex = CreatePillButtonTex(
+                    new Color(0.075f, 0.205f, 0.240f, 0.80f),
+                    new Color(0.045f, 0.130f, 0.160f, 0.86f),
+                    new Color(0.490f, 0.953f, 0.847f, 0.40f));
+            }
+
+            if (_menuBtnActiveTex == null)
+            {
+                _menuBtnActiveTex = CreatePillButtonTex(
+                    new Color(0.130f, 0.335f, 0.380f, 0.97f),
+                    new Color(0.075f, 0.195f, 0.235f, 0.98f),
+                    StylizedUITheme.GoldAccent);
+            }
+
+            if (_slotEmptyTex == null)
+            {
+                _slotEmptyTex = CreateEmptySlotTex();
             }
 
             if (_titleStyle != null) return;
@@ -414,48 +577,103 @@ namespace PulauKabut.UI
 
             _btnNormalStyle = StylizedUITheme.CreatePillStyle(17, TextAnchor.MiddleLeft, 24, 8);
             _btnNormalStyle.font = StylizedUITheme.HeadingFont;
+            _btnNormalStyle.border = new RectOffset(20, 20, 12, 12);
             _btnNormalStyle.normal.background = _menuBtnNormalTex;
+            _btnNormalStyle.hover.background = _menuBtnActiveTex;
+            _btnNormalStyle.active.background = _menuBtnActiveTex;
             _btnNormalStyle.normal.textColor = StylizedUITheme.CreamText;
 
             _btnActiveStyle = StylizedUITheme.CreatePillStyle(18, TextAnchor.MiddleLeft, 36, 8);
             _btnActiveStyle.font = StylizedUITheme.HeadingFont;
-            _btnActiveStyle.normal.background = StylizedUITheme.GoldPanelHoverTex;
+            _btnActiveStyle.border = new RectOffset(20, 20, 12, 12);
+            _btnActiveStyle.normal.background = _menuBtnActiveTex;
+            _btnActiveStyle.hover.background = _menuBtnActiveTex;
+            _btnActiveStyle.active.background = _menuBtnActiveTex;
             _btnActiveStyle.normal.textColor = StylizedUITheme.GoldAccent;
 
             _cardStyle = StylizedUITheme.CreateGoldPanelStyle(13, TextAnchor.UpperLeft, 16, 12);
+            _slotHoverStyle = StylizedUITheme.CreateGoldPanelStyle(13, TextAnchor.UpperLeft, 16, 12);
+            _slotHoverStyle.normal.background = StylizedUITheme.GoldPanelHoverTex;
+
+            _slotEmptyStyle = StylizedUITheme.CreateGoldPanelStyle(13, TextAnchor.MiddleCenter, 16, 12);
+            _slotEmptyStyle.normal.background = _slotEmptyTex;
+            _slotEmptyTextStyle = StylizedUITheme.CreateHeadingLabelStyle(16, new Color(0.66f, 0.70f, 0.74f, 0.92f), TextAnchor.MiddleCenter);
+
             _cardHeaderStyle = StylizedUITheme.CreateHeadingLabelStyle(14, StylizedUITheme.GoldAccent, TextAnchor.MiddleLeft);
             _cardBodyStyle = StylizedUITheme.CreateBodyLabelStyle(13, StylizedUITheme.SeafoamText, TextAnchor.MiddleLeft);
-            _cardValueStyle = StylizedUITheme.CreateHeadingLabelStyle(14, StylizedUITheme.GoldAccent, TextAnchor.MiddleRight);
+            _cardValueStyle = StylizedUITheme.CreateHeadingLabelStyle(13, StylizedUITheme.GoldAccent, TextAnchor.MiddleRight);
 
-            _descStyle = StylizedUITheme.CreateBodyLabelStyle(13, new Color(0.965f, 0.937f, 0.851f, 0.86f), TextAnchor.UpperLeft, wordWrap: true);
+            _descStyle = StylizedUITheme.CreateBodyLabelStyle(12, new Color(0.965f, 0.937f, 0.851f, 0.86f), TextAnchor.UpperLeft, wordWrap: true);
             _footerStyle = StylizedUITheme.CreateBodyLabelStyle(12, new Color(0.663f, 0.812f, 0.784f, 0.84f), TextAnchor.MiddleLeft);
             _keycapStyle = StylizedUITheme.CreateKeycapStyle(11);
+            _slotBadgeMintStyle = StylizedUITheme.CreateMintBadgeStyle(10);
+            _slotBadgeGoldStyle = StylizedUITheme.CreateKeycapStyle(10);
+
+            _deleteBtnStyle = StylizedUITheme.CreatePillStyle(11, TextAnchor.MiddleCenter, 6, 2);
+            _deleteBtnStyle.border = new RectOffset(14, 14, 6, 6);
+            _deleteBtnStyle.normal.background = _menuBtnNormalTex;
+            _deleteBtnStyle.normal.textColor = new Color(1f, 0.62f, 0.56f, 1f);
+            _deleteBtnStyle.hover.textColor = Color.white;
         }
 
-        private static Texture2D CreateSubtleMenuButtonTex()
+        private static Texture2D CreatePillButtonTex(Color topBg, Color botBg, Color borderCol)
         {
-            const int w = 128, h = 64;
+            const int w = 128, h = 44;
             Texture2D tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
             Color[] px = new Color[w * h];
-            Color bgTop = new Color(0.075f, 0.205f, 0.240f, 0.78f);
-            Color bgBot = new Color(0.045f, 0.130f, 0.160f, 0.84f);
-            Color borderCol = new Color(0.490f, 0.953f, 0.847f, 0.35f);
 
             for (int y = 0; y < h; y++)
             {
                 float v = y / (float)(h - 1);
                 for (int x = 0; x < w; x++)
                 {
-                    float tl = 18f - ((h - y) + x);
-                    float br = 18f - (y + (w - x));
-                    float tr = 6f - ((h - y) + (w - x));
-                    float bl = 6f - (y + x);
+                    float tl = 13f - ((h - y) + x);
+                    float br = 13f - (y + (w - x));
+                    float tr = 5f - ((h - y) + (w - x));
+                    float bl = 5f - (y + x);
                     float maxCut = Mathf.Max(Mathf.Max(tl, br), Mathf.Max(tr, bl));
-                    bool inside = maxCut <= 0f && x >= 1 && x < w - 1 && y >= 1 && y < h - 1;
-                    if (!inside) { px[y * w + x] = Color.clear; continue; }
+                    float dEdge = Mathf.Max(maxCut, Mathf.Max(Mathf.Max(-x + 1f, x - (w - 2f)), Mathf.Max(-y + 1f, y - (h - 2f))));
+                    if (dEdge > 0f) { px[y * w + x] = Color.clear; continue; }
 
-                    bool edge = maxCut > -3.2f || x <= 2 || x >= w - 3 || y <= 2 || y >= h - 3;
-                    px[y * w + x] = edge ? borderCol : Color.Lerp(bgBot, bgTop, v);
+                    float aa = Mathf.Clamp01(-dEdge);
+                    bool isBorder = dEdge > -2.6f;
+                    Color c = isBorder ? borderCol : Color.Lerp(botBg, topBg, v);
+                    c.a *= aa;
+                    px[y * w + x] = c;
+                }
+            }
+            tex.SetPixels(px);
+            tex.Apply();
+            return tex;
+        }
+
+        private static Texture2D CreateEmptySlotTex()
+        {
+            const int w = 128, h = 96;
+            Texture2D tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+            Color[] px = new Color[w * h];
+            Color topBg = new Color(0.18f, 0.21f, 0.23f, 0.78f);
+            Color botBg = new Color(0.12f, 0.14f, 0.16f, 0.84f);
+            Color borderCol = new Color(0.45f, 0.49f, 0.53f, 0.72f);
+
+            for (int y = 0; y < h; y++)
+            {
+                float v = y / (float)(h - 1);
+                for (int x = 0; x < w; x++)
+                {
+                    float tl = 22f - ((h - y) + x);
+                    float br = 22f - (y + (w - x));
+                    float tr = 10f - ((h - y) + (w - x));
+                    float bl = 10f - (y + x);
+                    float maxCut = Mathf.Max(Mathf.Max(tl, br), Mathf.Max(tr, bl));
+                    float dEdge = Mathf.Max(maxCut, Mathf.Max(Mathf.Max(-x + 1f, x - (w - 2f)), Mathf.Max(-y + 1f, y - (h - 2f))));
+                    if (dEdge > 0f) { px[y * w + x] = Color.clear; continue; }
+
+                    float aa = Mathf.Clamp01(-dEdge);
+                    bool isBorder = dEdge > -3.5f;
+                    Color c = isBorder ? borderCol : Color.Lerp(botBg, topBg, v);
+                    c.a *= aa;
+                    px[y * w + x] = c;
                 }
             }
             tex.SetPixels(px);

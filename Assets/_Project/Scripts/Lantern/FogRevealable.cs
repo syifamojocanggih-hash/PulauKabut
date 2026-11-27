@@ -34,9 +34,22 @@ namespace PulauKabut.Lantern
 
         private bool _isRevealed;
         private bool _hasBeenRevealedPermanently;
+        private bool _forceHidden;
 
         /// <summary>True jika objek/platform saat ini aktif dan bisa dipijak.</summary>
-        public bool IsRevealed => _isRevealed;
+        public bool IsRevealed => !_forceHidden && _isRevealed;
+
+        /// <summary>Jika true (mis. batu pijakan sedang jatuh/tenggelam), sembunyikan visual dan collider sementara.</summary>
+        public bool ForceHidden
+        {
+            get => _forceHidden;
+            set
+            {
+                if (_forceHidden == value) return;
+                _forceHidden = value;
+                ApplyRevealedState(_forceHidden ? false : IsWithinActiveLantern(), force: true);
+            }
+        }
 
         private void Awake()
         {
@@ -49,6 +62,11 @@ namespace PulauKabut.Lantern
 
         private void Update()
         {
+            if (_forceHidden)
+            {
+                return;
+            }
+
             if (_hasBeenRevealedPermanently)
             {
                 return;
@@ -88,16 +106,20 @@ namespace PulauKabut.Lantern
                 return;
             }
 
-            _isRevealed = revealed;
+            _isRevealed = !_forceHidden && revealed;
 
             if (targetCollider != null)
             {
-                targetCollider.enabled = keepColliderAlwaysEnabled || _isRevealed;
+                targetCollider.enabled = !_forceHidden && (keepColliderAlwaysEnabled || _isRevealed);
             }
 
             if (targetRenderer != null)
             {
-                if (_isRevealed)
+                if (_forceHidden)
+                {
+                    targetRenderer.enabled = false;
+                }
+                else if (_isRevealed)
                 {
                     targetRenderer.enabled = true;
                     if (revealedMaterial != null)

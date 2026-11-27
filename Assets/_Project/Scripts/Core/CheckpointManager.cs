@@ -1,3 +1,4 @@
+using System;
 using PulauKabut.Player;
 using UnityEngine;
 
@@ -17,9 +18,16 @@ namespace PulauKabut.Core
         private Vector3 _checkpointPos;
         private Quaternion _checkpointRot = Quaternion.identity;
         private bool _hasCheckpoint;
-        private string _lastCheckpointName = string.Empty;
+        private string _lastCheckpointName = "Dermaga";
         private float _toastTimer;
         private GUIStyle _toastStyle;
+
+        public bool HasCheckpoint => _hasCheckpoint;
+        public Vector3 CheckpointPosition => _checkpointPos;
+        public Quaternion CheckpointRotation => _checkpointRot;
+        public string LastCheckpointName => _lastCheckpointName;
+
+        public event Action<Vector3, Quaternion, string> OnCheckpointUpdated;
 
         private void Awake()
         {
@@ -62,8 +70,21 @@ namespace PulauKabut.Core
             _checkpointPos = position;
             _checkpointRot = rotation;
             _hasCheckpoint = true;
-            _lastCheckpointName = checkpointName;
+            _lastCheckpointName = string.IsNullOrEmpty(checkpointName) ? "Dermaga" : checkpointName;
             _toastTimer = toastDuration;
+            OnCheckpointUpdated?.Invoke(_checkpointPos, _checkpointRot, _lastCheckpointName);
+        }
+
+        /// <summary>Memulihkan checkpoint dari data tersimpan tanpa memicu toast ulang.</summary>
+        public void RestoreCheckpoint(Vector3 position, Quaternion rotation, string checkpointName)
+        {
+            _checkpointPos = position;
+            _checkpointRot = rotation;
+            _hasCheckpoint = true;
+            if (!string.IsNullOrEmpty(checkpointName))
+            {
+                _lastCheckpointName = checkpointName;
+            }
         }
 
         /// <summary>Memindahkan pemain kembali ke titik checkpoint terakhir dengan aman.</summary>

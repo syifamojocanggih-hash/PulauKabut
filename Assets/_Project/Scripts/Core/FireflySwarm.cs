@@ -24,13 +24,17 @@ namespace PulauKabut.Core
         [Tooltip("Sudut maksimal kepakan sayap (derajat).")]
         [SerializeField] private float wingFlapAngle = 32f;
 
+        private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
+
         private Transform[] _flies;
         private Transform[] _wingsL;
         private Transform[] _wingsR;
+        private Renderer[] _bodyRenderers;
         private Quaternion[] _baseWingLRot;
         private Quaternion[] _baseWingRRot;
         private Vector3[] _baseLocalPositions;
         private float[] _phaseOffsets;
+        private MaterialPropertyBlock _mpb;
 
         private void Awake()
         {
@@ -38,10 +42,12 @@ namespace PulauKabut.Core
             _flies = new Transform[count];
             _wingsL = new Transform[count];
             _wingsR = new Transform[count];
+            _bodyRenderers = new Renderer[count];
             _baseWingLRot = new Quaternion[count];
             _baseWingRRot = new Quaternion[count];
             _baseLocalPositions = new Vector3[count];
             _phaseOffsets = new float[count];
+            _mpb = new MaterialPropertyBlock();
 
             for (int i = 0; i < count; i++)
             {
@@ -56,6 +62,9 @@ namespace PulauKabut.Core
                 _wingsR[i] = wingR;
                 if (wingL != null) _baseWingLRot[i] = wingL.localRotation;
                 if (wingR != null) _baseWingRRot[i] = wingR.localRotation;
+
+                Transform body = FindWing(child, "Kunang_Body");
+                if (body != null) _bodyRenderers[i] = body.GetComponent<Renderer>();
             }
         }
 
@@ -120,6 +129,14 @@ namespace PulauKabut.Core
                 if (wr != null)
                 {
                     wr.localRotation = _baseWingRRot[i] * Quaternion.AngleAxis(-flap, Vector3.forward);
+                }
+
+                Renderer bodyRend = _bodyRenderers != null ? _bodyRenderers[i] : null;
+                if (bodyRend != null)
+                {
+                    float glow = Mathf.Lerp(0.35f, 0.95f, 0.5f + 0.5f * Mathf.Sin(time * 2.1f + phase));
+                    _mpb.SetColor(EmissionColorId, new Color(0.82f, 0.64f, 0.16f, 1f) * glow);
+                    bodyRend.SetPropertyBlock(_mpb);
                 }
             }
         }

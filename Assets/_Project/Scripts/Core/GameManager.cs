@@ -78,6 +78,12 @@ namespace PulauKabut.Core
 
         private void Update()
         {
+            if (_input == null)
+            {
+                _input = new PlayerInputActions();
+                _input.Player.Enable();
+            }
+
             // Baca tombol Pause (Esc / Start) langsung tanpa alokasi memori
             if (_input.Player.Pause.WasPressedThisFrame())
             {

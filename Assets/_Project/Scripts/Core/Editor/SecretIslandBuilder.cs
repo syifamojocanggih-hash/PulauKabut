@@ -42,7 +42,6 @@ namespace PulauKabut.Core.Editor
 
             BuildNaturalClues(root.transform);
             BuildSecretIsland(root.transform);
-            BuildShortcutBridge(root.transform);
 
             PrefabUtility.SaveAsPrefabAssetAndConnect(root, PrefabSavePath, InteractionMode.AutomatedAction);
 
@@ -69,36 +68,46 @@ namespace PulauKabut.Core.Editor
             InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyPineTree.fbx", cluesRoot.transform,
                 "Pohon_Penyamaran_02", new Vector3(4.3f, 0.4f, -2.2f), new Vector3(0f, 95f, 0f), Vector3.one * 1.15f, false);
 
-            // 1. Perahu Karam miring di tepi air menunjuk ke barat (+Z lokal = -X dunia) menuju kabut
+            // 1. Perahu Karam miring di tepi air sebelah tapak batu menunjuk ke barat (+Z lokal = -X dunia)
             GameObject boatPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                 "Assets/_Project/Art/Models/Environment/SM_FishingBoat_DesaPelita.fbx");
             if (boatPrefab != null)
             {
                 GameObject boat = (GameObject)PrefabUtility.InstantiatePrefab(boatPrefab, cluesRoot.transform);
                 boat.name = "Landmark_PerahuKaram";
-                boat.transform.localPosition = new Vector3(0f, -0.25f, 1.5f);
+                boat.transform.localPosition = new Vector3(-2.6f, -0.25f, 1.8f);
                 boat.transform.localRotation = Quaternion.Euler(-11f, 8f, 16f);
                 EnsureCollider<MeshCollider>(boat);
             }
 
-            // 2. Jejak batu loncat melengkung jauh ke dalam kabut (3 batu di tengah butuh Lentera [F]!)
+            // 2. Jejak tapak batu berjarak ~3.3 m antar pusat (mudah dilompati) sampai naik mulus ke Pulau Rahasia!
             GameObject stonePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                 "Assets/_Project/Art/Models/Environment/SM_CozySteppingStone.fbx");
             GameObject kunangPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                 "Assets/_Project/Prefabs/Props/PF_Kunang.prefab");
             Material litMat = AssetDatabase.LoadAssetAtPath<Material>(
-                "Assets/_Project/Prefabs/Player/Materials/MAT_FogPlatform_Lit.mat");
-            Material dimMat = AssetDatabase.LoadAssetAtPath<Material>(
-                "Assets/_Project/Prefabs/Player/Materials/MAT_FogPlatform_Dim.mat");
+                "Assets/_Project/Scenes/Zone_Mangrove/Materials/MAT_ZM_SwampStoneLit.mat")
+                ?? AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Prefabs/Player/Materials/MAT_FogPlatform_Lit.mat");
+            Material mistyMat = AssetDatabase.LoadAssetAtPath<Material>(
+                "Assets/_Project/Scenes/Zone_Mangrove/Materials/MAT_ZM_SwampMisty.mat")
+                ?? AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Prefabs/Player/Materials/MAT_FogPlatform_Dim.mat");
+            Material rootMat = AssetDatabase.LoadAssetAtPath<Material>(
+                "Assets/_Project/Scenes/Zone_Mangrove/Materials/MAT_ZM_MangroveRoot.mat");
 
             Vector3[] stoneOffsets =
             {
-                new Vector3(0.5f, 0.10f, 6.2f),
-                new Vector3(-1.3f, 0.15f, 11.0f),
-                new Vector3(0.9f, 0.25f, 16.0f),   // FogRevealable 1
-                new Vector3(-0.8f, 0.30f, 21.2f),  // FogRevealable 2
-                new Vector3(1.1f, 0.35f, 26.2f),   // FogRevealable 3
-                new Vector3(-0.4f, 0.30f, 31.0f)
+                new Vector3( 0.3f, 1.45f,  0.2f),
+                new Vector3(-0.5f, 1.05f,  3.3f),
+                new Vector3( 0.6f, 0.80f,  6.5f),
+                new Vector3(-0.7f, 0.75f,  9.8f),  // FogRevealable
+                new Vector3( 0.8f, 0.75f, 13.1f),  // FogRevealable
+                new Vector3(-0.6f, 0.80f, 16.4f),  // FogRevealable
+                new Vector3( 0.7f, 0.85f, 19.7f),  // FogRevealable
+                new Vector3(-0.5f, 0.95f, 23.0f),  // FogRevealable
+                new Vector3( 0.6f, 1.10f, 26.3f),
+                new Vector3(-0.4f, 1.30f, 29.6f),
+                new Vector3( 0.3f, 1.60f, 32.9f),
+                new Vector3( 0.0f, 1.95f, 36.1f),
             };
 
             for (int i = 0; i < stoneOffsets.Length; i++)
@@ -109,13 +118,22 @@ namespace PulauKabut.Core.Editor
 
                 stone.name = $"JejakBatu_{i + 1:00}";
                 stone.transform.localPosition = stoneOffsets[i];
-                stone.transform.localRotation = Quaternion.Euler(0f, i * 42f, 0f);
-                stone.transform.localScale = new Vector3(1.45f, 1f, 1.45f);
+                stone.transform.localRotation = Quaternion.Euler(0f, i * 37f, 0f);
+                stone.transform.localScale = new Vector3(1.55f, 1f, 1.55f);
 
                 Collider col = EnsureCollider<BoxCollider>(stone);
                 Renderer rend = stone.GetComponentInChildren<Renderer>();
 
-                if (i >= 2 && i <= 4)
+                // Tambah pondasi batu karang laut agar tapak batu tertanam kokoh di air (tidak melayang!)
+                GameObject reefBase = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                reefBase.name = "Grounded_ReefBase";
+                reefBase.transform.SetParent(stone.transform, false);
+                reefBase.transform.position = new Vector3(stone.transform.position.x, -0.45f, stone.transform.position.z);
+                reefBase.transform.localScale = new Vector3(0.65f, 0.85f, 0.65f);
+                Object.DestroyImmediate(reefBase.GetComponent<Collider>());
+                if (rootMat != null) reefBase.GetComponent<MeshRenderer>().sharedMaterial = rootMat;
+
+                if (i >= 3 && i <= 7)
                 {
                     stone.name += "_Kabut";
                     FogRevealable reveal = stone.AddComponent<FogRevealable>();
@@ -123,13 +141,14 @@ namespace PulauKabut.Core.Editor
                     so.FindProperty("targetCollider").objectReferenceValue = col;
                     so.FindProperty("targetRenderer").objectReferenceValue = rend;
                     so.FindProperty("revealedMaterial").objectReferenceValue = litMat;
-                    so.FindProperty("shadowMaterial").objectReferenceValue = dimMat;
-                    so.FindProperty("extraRevealMargin").floatValue = 1.3f;
+                    so.FindProperty("shadowMaterial").objectReferenceValue = mistyMat;
+                    so.FindProperty("extraRevealMargin").floatValue = 1.5f;
+                    so.FindProperty("keepColliderAlwaysEnabled").boolValue = true;
                     so.ApplyModifiedPropertiesWithoutUndo();
                 }
 
                 // Kunang-kunang redup sebagai petunjuk alami di tengah kabut
-                if (kunangPrefab != null && (i == 0 || i == 3 || i == 5))
+                if (kunangPrefab != null && (i == 1 || i == 5 || i == 9))
                 {
                     GameObject kunang = (GameObject)PrefabUtility.InstantiatePrefab(kunangPrefab, cluesRoot.transform);
                     kunang.name = $"Kunang_Petunjuk_{i + 1:00}";
@@ -268,6 +287,10 @@ namespace PulauKabut.Core.Editor
                 bridgeMesh.name = "Bridge_Mesh";
                 bridgeMesh.transform.localPosition = new Vector3(0f, 0f, 16.5f);
                 bridgeMesh.transform.localScale = new Vector3(1.25f, 1f, 3.4f);
+
+                // Hitung ukuran dek jembatan penuh dari semua Renderer anak agar collider mencakup seluruh panjang jembatan
+                BoxCollider fullCol = bridgeMesh.AddComponent<BoxCollider>();
+                FitBoxColliderToChildren(bridgeMesh, fullCol);
             }
             else
             {
@@ -319,8 +342,63 @@ namespace PulauKabut.Core.Editor
         private static Collider EnsureCollider<T>(GameObject target) where T : Collider
         {
             Collider existing = target.GetComponentInChildren<Collider>();
-            if (existing != null) return existing;
+            if (existing != null)
+            {
+                if (!(existing is MeshCollider emc && emc.sharedMesh == null))
+                {
+                    return existing;
+                }
+                Object.DestroyImmediate(emc);
+            }
+
+            if (typeof(T) == typeof(MeshCollider))
+            {
+                Collider firstCreated = null;
+                foreach (MeshFilter mf in target.GetComponentsInChildren<MeshFilter>(true))
+                {
+                    if (mf.sharedMesh == null) continue;
+                    MeshCollider mc = mf.gameObject.GetComponent<MeshCollider>();
+                    if (mc == null) mc = mf.gameObject.AddComponent<MeshCollider>();
+                    mc.sharedMesh = mf.sharedMesh;
+                    if (firstCreated == null) firstCreated = mc;
+                }
+                if (firstCreated != null) return firstCreated;
+            }
+
             return target.AddComponent<T>();
+        }
+
+        private static void FitBoxColliderToChildren(GameObject root, BoxCollider box)
+        {
+            MeshFilter[] filters = root.GetComponentsInChildren<MeshFilter>(true);
+            if (filters.Length == 0) return;
+
+            Bounds b = new Bounds();
+            bool hasBounds = false;
+            Matrix4x4 rootInv = root.transform.worldToLocalMatrix;
+
+            foreach (MeshFilter mf in filters)
+            {
+                if (mf.sharedMesh == null || mf.name.StartsWith("Post_")) continue;
+                Bounds mb = mf.sharedMesh.bounds;
+                Matrix4x4 toRoot = rootInv * mf.transform.localToWorldMatrix;
+
+                for (int ix = -1; ix <= 1; ix += 2)
+                for (int iy = -1; iy <= 1; iy += 2)
+                for (int iz = -1; iz <= 1; iz += 2)
+                {
+                    Vector3 corner = mb.center + Vector3.Scale(mb.extents, new Vector3(ix, iy, iz));
+                    Vector3 localPt = toRoot.MultiplyPoint3x4(corner);
+                    if (!hasBounds) { b = new Bounds(localPt, Vector3.zero); hasBounds = true; }
+                    else b.Encapsulate(localPt);
+                }
+            }
+
+            if (hasBounds)
+            {
+                box.center = b.center;
+                box.size = new Vector3(b.size.x, Mathf.Max(0.35f, b.size.y), b.size.z);
+            }
         }
     }
 }

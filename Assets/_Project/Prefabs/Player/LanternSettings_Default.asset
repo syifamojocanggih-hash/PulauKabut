@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 77cd2faf9e6456147b0f9b12b19af60e, type: 3}
   m_Name: LanternSettings_Default
   m_EditorClassIdentifier: Assembly-CSharp::PulauKabut.Lantern.LanternSettings
-  revealRadius: 12
-  lightIntensity: 5
-  lightRange: 10
+  revealRadius: 14
+  lightIntensity: 5.5
+  lightRange: 13
   lightColor: {r: 1, g: 0.81, b: 0.44, a: 1}
   fadeSpeed: 8
   startLit: 0
@@ -25,8 +25,8 @@ MonoBehaviour:
   minChargeToRelight: 0.15
   lowChargeFlickerThreshold: 0.3
   controlSceneFog: 1
-  unlitFogStart: 1.5
-  unlitFogEnd: 11
-  litFogStart: 4
-  litFogEnd: 19
+  unlitFogStart: 5.5
+  unlitFogEnd: 15.5
+  litFogStart: 9
+  litFogEnd: 29
   fogTransitionSpeed: 3.5

@@ -20,14 +20,12 @@ namespace PulauKabut.Core
         [Header("Animasi & Teks")]
         [SerializeField] private string promptText = "Turunkan Jembatan Pintas";
         [SerializeField] private string unlockBannerMessage = "Jalur Pintas Terbuka!";
-        [SerializeField] private Vector3 raisedLocalEuler = new Vector3(-78f, 0f, 0f);
-        [SerializeField] private Vector3 loweredLocalEuler = Vector3.zero;
-        [Min(10f)]
-        [SerializeField] private float lowerSpeed = 95f;
+        [SerializeField] private float extendDuration = 1.15f;
 
         private bool _isActivated;
         private bool _isAnimating;
-        private Quaternion _targetRotation;
+        private float _extendProgress;
+        private Vector3 _fullLocalScale = Vector3.one;
 
         public string PromptText => promptText;
         public bool CanInteract => !_isActivated;
@@ -36,15 +34,16 @@ namespace PulauKabut.Core
         {
             if (bridgePivot != null)
             {
-                bridgePivot.localRotation = Quaternion.Euler(raisedLocalEuler);
+                _fullLocalScale = bridgePivot.localScale;
+                bridgePivot.localRotation = Quaternion.identity;
+                bridgePivot.localScale = new Vector3(_fullLocalScale.x, _fullLocalScale.y, 0.001f);
+                bridgePivot.gameObject.SetActive(false);
             }
 
             if (bridgeWalkCollider != null)
             {
                 bridgeWalkCollider.enabled = false;
             }
-
-            _targetRotation = Quaternion.Euler(loweredLocalEuler);
         }
 
         public void Interact(GameObject interactor)
@@ -56,6 +55,12 @@ namespace PulauKabut.Core
 
             _isActivated = true;
             _isAnimating = true;
+            _extendProgress = 0f;
+
+            if (bridgePivot != null)
+            {
+                bridgePivot.gameObject.SetActive(true);
+            }
 
             GameAudioManager.Instance?.PlayBrazierLit();
             ObjectiveGuide.Instance?.ShowUnlockNotification(unlockBannerMessage);
@@ -68,14 +73,13 @@ namespace PulauKabut.Core
                 return;
             }
 
-            bridgePivot.localRotation = Quaternion.RotateTowards(
-                bridgePivot.localRotation,
-                _targetRotation,
-                lowerSpeed * Time.deltaTime);
+            _extendProgress = Mathf.Clamp01(_extendProgress + Time.deltaTime / Mathf.Max(0.2f, extendDuration));
+            float smooth = Mathf.SmoothStep(0.02f, 1f, _extendProgress);
+            bridgePivot.localScale = new Vector3(_fullLocalScale.x, _fullLocalScale.y, _fullLocalScale.z * smooth);
 
-            if (Quaternion.Angle(bridgePivot.localRotation, _targetRotation) <= 0.25f)
+            if (_extendProgress >= 1f)
             {
-                bridgePivot.localRotation = _targetRotation;
+                bridgePivot.localScale = _fullLocalScale;
                 _isAnimating = false;
 
                 if (bridgeWalkCollider != null)

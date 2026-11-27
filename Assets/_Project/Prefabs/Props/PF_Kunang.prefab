@@ -103,5 +103,34 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 56bbcb9b23e324645a34a30da2690a26, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7432708709500305491}
   m_SourcePrefab: {fileID: 100100000, guid: 56bbcb9b23e324645a34a30da2690a26, type: 3}
+--- !u!1 &8713614825443512350 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 56bbcb9b23e324645a34a30da2690a26, type: 3}
+  m_PrefabInstance: {fileID: 8371509278723173711}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7432708709500305491
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8713614825443512350}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e102235ff216d254a88bde02d1eaa416, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PulauKabut.Core.FireflyAmbient
+  horizontalAmplitude: 0.52
+  verticalAmplitude: 0.26
+  moveSpeed: 1.15
+  wingFlapSpeed: 46
+  wingFlapAngle: 30
+  glowColor: {r: 0.82, g: 0.64, b: 0.16, a: 1}
+  minGlow: 0.35
+  maxGlow: 0.95
+  glowPulseSpeed: 2.1

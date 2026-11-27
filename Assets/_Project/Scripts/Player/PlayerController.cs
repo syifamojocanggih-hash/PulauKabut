@@ -141,6 +141,12 @@ namespace PulauKabut.Player
                 return;
             }
 
+            if (_input == null)
+            {
+                _input = new PlayerInputActions();
+                _input.Player.Enable();
+            }
+
             // Baca input langsung setiap frame tanpa callback dan tanpa alokasi memori
             _moveInput = _input.Player.Move.ReadValue<Vector2>();
             _jumpPressedThisFrame = _input.Player.Jump.WasPressedThisFrame();
