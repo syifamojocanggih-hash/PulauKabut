@@ -47,7 +47,7 @@ namespace PulauKabut.UI
         private static readonly int WorldBoundsId = Shader.PropertyToID("_WorldBounds");
 
         private const int FowSize = 128;
-        private static readonly Vector4 WorldBounds = new Vector4(-130f, -140f, 230f, 275f);
+        private static readonly Vector4 WorldBounds = new Vector4(-150f, -150f, 250f, 290f);
 
         private Transform _cameraTransform;
         private Camera _minimapCam;

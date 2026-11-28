@@ -27,6 +27,7 @@ namespace PulauKabut.UI
         private static Texture2D _pentagonIconTex;
         private static Texture2D _hexagonIconTex;
         private static Texture2D _houseIconTex;
+        private static Texture2D _islandIconTex;
         private static Font _headingFont;
         private static Font _bodyFont;
         private static bool _fontsLoaded;
@@ -239,6 +240,108 @@ namespace PulauKabut.UI
                     _houseIconTex.Apply();
                 }
                 return _houseIconTex;
+            }
+        }
+
+        /// <summary>Ikon ilustrasi Pulau Rahasia bergaya Cozy Stylized (laut, tebing, pulau hijau, cemara, & menara pelita).</summary>
+        public static Texture2D IslandIconTex
+        {
+            get
+            {
+                if (_islandIconTex == null)
+                {
+                    const int s = 160;
+                    _islandIconTex = new Texture2D(s, s, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
+                    Color[] px = new Color[s * s];
+
+                    Color oceanDeep = new Color(0.13f, 0.48f, 0.60f, 0.95f);
+                    Color oceanFoam = new Color(0.62f, 0.92f, 0.94f, 0.90f);
+                    Color earthLight = new Color(0.49f, 0.30f, 0.16f, 1f);
+                    Color earthDark = new Color(0.34f, 0.20f, 0.10f, 1f);
+                    Color grassTop = new Color(0.46f, 0.75f, 0.27f, 1f);
+                    Color grassShade = new Color(0.32f, 0.58f, 0.21f, 1f);
+                    Color pineDark = new Color(0.16f, 0.42f, 0.22f, 1f);
+                    Color pineLight = new Color(0.25f, 0.56f, 0.28f, 1f);
+                    Color trunkCol = new Color(0.36f, 0.21f, 0.11f, 1f);
+                    Color towerWall = new Color(0.93f, 0.89f, 0.78f, 1f);
+                    Color towerRoof = new Color(0.28f, 0.24f, 0.38f, 1f);
+
+                    for (int y = 0; y < s; y++)
+                    {
+                        float ny = y / (float)(s - 1);
+                        for (int x = 0; x < s; x++)
+                        {
+                            float nx = (x / (float)(s - 1)) * 2f - 1f;
+                            Color c = Color.clear;
+
+                            // 1. Lingkaran air laut di bagian bawah pulau
+                            float ox = nx / 0.86f;
+                            float oy = (ny - 0.24f) / 0.14f;
+                            float oceanD = ox * ox + oy * oy;
+                            if (oceanD <= 1f)
+                            {
+                                c = oceanD > 0.76f ? oceanFoam : oceanDeep;
+                            }
+
+                            // 2. Tebing tanah cokelat pulau
+                            if (ny >= 0.22f && ny <= 0.41f)
+                            {
+                                float halfW = Mathf.Lerp(0.56f, 0.68f, (ny - 0.22f) / 0.19f);
+                                if (Mathf.Abs(nx) <= halfW)
+                                {
+                                    c = nx > 0.12f ? earthDark : earthLight;
+                                }
+                            }
+
+                            // 3. Bukit rumput hijau bergaya low-poly
+                            float gx = nx / 0.72f;
+                            float gy = (ny - 0.37f) / 0.19f;
+                            if (ny >= 0.36f && (gx * gx + gy * gy) <= 1f)
+                            {
+                                c = ny > 0.44f ? grassTop : grassShade;
+                            }
+
+                            // 4. Dua pohon cemara di sisi kiri pulau
+                            // Pohon 1 (belakang kiri)
+                            if (Mathf.Abs(nx + 0.36f) <= 0.03f && ny >= 0.46f && ny <= 0.56f) c = trunkCol;
+                            if (ny >= 0.53f && ny <= 0.76f && Mathf.Abs(nx + 0.36f) <= (0.76f - ny) * 0.65f)
+                                c = nx < -0.36f ? pineLight : pineDark;
+                            // Pohon 2 (depan kiri)
+                            if (Mathf.Abs(nx + 0.17f) <= 0.03f && ny >= 0.49f && ny <= 0.58f) c = trunkCol;
+                            if (ny >= 0.56f && ny <= 0.83f && Mathf.Abs(nx + 0.17f) <= (0.83f - ny) * 0.68f)
+                                c = nx < -0.17f ? pineLight : pineDark;
+
+                            // 5. Menara Pelita Kuno di sisi tengah-kanan pulau
+                            float tx = nx - 0.18f;
+                            if (Mathf.Abs(tx) <= 0.09f && ny >= 0.48f && ny <= 0.72f)
+                            {
+                                c = towerWall;
+                                // Jendela emas menyala
+                                if (Mathf.Abs(tx) <= 0.035f && ny >= 0.59f && ny <= 0.67f)
+                                    c = GoldAccent;
+                            }
+                            if (ny >= 0.71f && ny <= 0.88f && Mathf.Abs(tx) <= (0.88f - ny) * 0.82f)
+                            {
+                                c = towerRoof;
+                            }
+
+                            // 6. Titik kunang-kunang emas di sekitar pulau
+                            float d1 = (nx + 0.52f) * (nx + 0.52f) + (ny - 0.72f) * (ny - 0.72f);
+                            float d2 = (nx - 0.44f) * (nx - 0.44f) + (ny - 0.76f) * (ny - 0.76f);
+                            float d3 = (nx - 0.02f) * (nx - 0.02f) + (ny - 0.86f) * (ny - 0.86f);
+                            if (d1 < 0.0012f || d2 < 0.0012f || d3 < 0.0010f)
+                            {
+                                c = GoldAccent;
+                            }
+
+                            px[y * s + x] = c;
+                        }
+                    }
+
+                    _islandIconTex.SetPixels(px);
+                    _islandIconTex.Apply();
+                }
+                return _islandIconTex;
             }
         }
 

@@ -6,10 +6,9 @@ using UnityEngine;
 namespace PulauKabut.Core.Editor
 {
     /// <summary>
-    /// Tool Editor untuk membangun 1 area Pulau Rahasia yang luas & tersembunyi di perairan barat:
-    /// - Petunjuk alam: Perahu Karam tersembunyi di balik karang/pohon tepi barat Desa Pelita + jejak batu kabut (FogRevealable)
-    /// - Pulau Rahasia: Pulau besar (1.65x) + dataran tinggi kecil, dikelilingi tebing/pohon agar tersembunyi di kabut
-    /// - Shortcut: Jembatan pintas yang bisa diturunkan [E] dari Pulau Rahasia
+    /// Tool Editor untuk membangun 1 area Pulau Rahasia yang luas, ikonik, & tersembunyi di perairan barat:
+    /// - Petunjuk alam & Jembatan Tuas: Celah karang & hutan cemara penyamar, Perahu Karam, + Jembatan Tarik bertuas [E]
+    /// - Pulau Rahasia: Daratan luas (~35m x 32m) bertingkat 3 dengan Gapura Batu, Pondok Penjelajah, & Menara Pelita Kuno
     /// </summary>
     public static class SecretIslandBuilder
     {
@@ -26,12 +25,11 @@ namespace PulauKabut.Core.Editor
             }
 
             // Tempatkan di perairan terbuka sebelah BARAT Desa Pelita (tepi barat pulau utama ~ X=-38.4, Z=-56.4)
-            // Arah lokal +Z root diputar -90 derajat (menghadap Barat / -X dunia) agar menjauh ke laut terbuka tanpa overlap!
+            // Arah lokal +Z root diputar -90 derajat (menghadap Barat / -X dunia)
             Vector3 anchorPos = new Vector3(-40.5f, 0.2f, -58f);
             GameObject hubObj = GameObject.Find("01_HUB_DesaPelita");
             if (hubObj == null && GameObject.Find("Player_SpawnPoint_UjungPulau") == null)
             {
-                // Fallback untuk Sandbox_Environment
                 anchorPos = new Vector3(-18f, 0.2f, 0f);
             }
 
@@ -40,7 +38,7 @@ namespace PulauKabut.Core.Editor
             root.transform.rotation = Quaternion.Euler(0f, -90f, 0f);
             Undo.RegisterCreatedObjectUndo(root, "Bangun Pulau Rahasia & Shortcut");
 
-            BuildNaturalClues(root.transform);
+            BuildHiddenEntranceAndDrawbridge(root.transform);
             BuildSecretIsland(root.transform);
 
             PrefabUtility.SaveAsPrefabAssetAndConnect(root, PrefabSavePath, InteractionMode.AutomatedAction);
@@ -53,107 +51,108 @@ namespace PulauKabut.Core.Editor
             }
         }
 
-        private static void BuildNaturalClues(Transform parent)
+        private static void BuildHiddenEntranceAndDrawbridge(Transform parent)
         {
-            GameObject cluesRoot = new GameObject("01_Petunjuk_Alam");
-            cluesRoot.transform.SetParent(parent, false);
+            GameObject entranceRoot = new GameObject("01_Petunjuk_Dan_Jembatan_Tuas");
+            entranceRoot.transform.SetParent(parent, false);
 
-            // Rimbunan pohon & batu karang di tepi pantai untuk menyamarkan jalan masuk rahasia
-            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyRock_01.fbx", cluesRoot.transform,
-                "Karang_Penyamaran_01", new Vector3(-3.4f, 0.2f, -1.2f), new Vector3(0f, 35f, 0f), Vector3.one * 1.35f, true);
-            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyRock_02.fbx", cluesRoot.transform,
-                "Karang_Penyamaran_02", new Vector3(3.6f, 0.2f, -0.8f), new Vector3(0f, -45f, 0f), Vector3.one * 1.4f, true);
-            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyPineTree.fbx", cluesRoot.transform,
-                "Pohon_Penyamaran_01", new Vector3(-4.2f, 0.4f, -2.5f), new Vector3(0f, 12f, 0f), Vector3.one * 1.25f, false);
-            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyPineTree.fbx", cluesRoot.transform,
-                "Pohon_Penyamaran_02", new Vector3(4.3f, 0.4f, -2.2f), new Vector3(0f, 95f, 0f), Vector3.one * 1.15f, false);
+            // Rimbunan tebing karang tinggi & pohon cemara rapat di tepi pantai barat untuk menyamarkan celah masuk
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyRock_01.fbx", entranceRoot.transform,
+                "Karang_Penyamaran_01", new Vector3(-4.2f, 0.5f, -0.8f), new Vector3(0f, 35f, 0f), Vector3.one * 2.4f, true);
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyRock_02.fbx", entranceRoot.transform,
+                "Karang_Penyamaran_02", new Vector3(4.5f, 0.5f, -0.5f), new Vector3(0f, -45f, 0f), Vector3.one * 2.6f, true);
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyRock_01.fbx", entranceRoot.transform,
+                "Karang_Penyamaran_03", new Vector3(-6.8f, 0.6f, 2.5f), new Vector3(0f, 110f, 0f), Vector3.one * 2.1f, true);
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyPineTree.fbx", entranceRoot.transform,
+                "Pohon_Penyamaran_01", new Vector3(-4.8f, 0.7f, -2.5f), new Vector3(0f, 12f, 0f), Vector3.one * 1.45f, false);
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyPineTree.fbx", entranceRoot.transform,
+                "Pohon_Penyamaran_02", new Vector3(4.9f, 0.7f, -2.2f), new Vector3(0f, 95f, 0f), Vector3.one * 1.35f, false);
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyPineTree.fbx", entranceRoot.transform,
+                "Pohon_Penyamaran_03", new Vector3(-6.2f, 0.7f, -4.4f), new Vector3(0f, 45f, 0f), Vector3.one * 1.25f, false);
 
-            // 1. Perahu Karam miring di tepi air sebelah tapak batu menunjuk ke barat (+Z lokal = -X dunia)
+            // 1. Perahu Karam miring di balik karang menunjuk ke arah jembatan rahasia
             GameObject boatPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                 "Assets/_Project/Art/Models/Environment/SM_FishingBoat_DesaPelita.fbx");
             if (boatPrefab != null)
             {
-                GameObject boat = (GameObject)PrefabUtility.InstantiatePrefab(boatPrefab, cluesRoot.transform);
+                GameObject boat = (GameObject)PrefabUtility.InstantiatePrefab(boatPrefab, entranceRoot.transform);
                 boat.name = "Landmark_PerahuKaram";
-                boat.transform.localPosition = new Vector3(-2.6f, -0.25f, 1.8f);
-                boat.transform.localRotation = Quaternion.Euler(-11f, 8f, 16f);
+                boat.transform.localPosition = new Vector3(-2.8f, -0.2f, 2.2f);
+                boat.transform.localRotation = Quaternion.Euler(-12f, -18f, 18f);
                 EnsureCollider<MeshCollider>(boat);
             }
 
-            // 2. Jejak tapak batu berjarak ~3.3 m antar pusat (mudah dilompati) sampai naik mulus ke Pulau Rahasia!
-            GameObject stonePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/_Project/Art/Models/Environment/SM_CozySteppingStone.fbx");
+            // 2. Dermaga kecil tempat tuas jembatan rahasia berada
+            GameObject pierPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/_Project/Art/Models/Environment/SM_CozyPier.fbx");
+            if (pierPrefab != null)
+            {
+                GameObject dock = (GameObject)PrefabUtility.InstantiatePrefab(pierPrefab, entranceRoot.transform);
+                dock.name = "Dermaga_Tuas_Rahasia";
+                dock.transform.localPosition = new Vector3(0f, 1.4f, 1.0f);
+                dock.transform.localScale = new Vector3(1.4f, 1f, 0.65f);
+                BoxCollider dockCol = dock.AddComponent<BoxCollider>();
+                FitBoxColliderToChildren(dock, dockCol);
+            }
+
+            // 3. Jembatan Tarik Utama yang awalnya terangkat (-78 derajat) dan turun ke Pulau Rahasia saat tuas ditarik [E]
+            GameObject bridgePivot = new GameObject("Jembatan_Rahasia_Pivot");
+            bridgePivot.transform.SetParent(entranceRoot.transform, false);
+            bridgePivot.transform.localPosition = new Vector3(0f, 1.55f, 3.8f);
+
+            GameObject bridgeMesh;
+            if (pierPrefab != null)
+            {
+                bridgeMesh = (GameObject)PrefabUtility.InstantiatePrefab(pierPrefab, bridgePivot.transform);
+                bridgeMesh.name = "Jembatan_Menuju_PulauRahasia";
+                bridgeMesh.transform.localPosition = new Vector3(0f, 0f, 21.8f);
+                bridgeMesh.transform.localScale = new Vector3(1.4f, 1f, 4.45f);
+
+                BoxCollider fullCol = bridgeMesh.AddComponent<BoxCollider>();
+                FitBoxColliderToChildren(bridgeMesh, fullCol);
+            }
+            else
+            {
+                bridgeMesh = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                bridgeMesh.name = "Jembatan_Menuju_PulauRahasia";
+                bridgeMesh.transform.SetParent(bridgePivot.transform, false);
+                bridgeMesh.transform.localPosition = new Vector3(0f, 0f, 21.8f);
+                bridgeMesh.transform.localScale = new Vector3(2.6f, 0.3f, 44f);
+            }
+
+            Collider walkCol = EnsureCollider<BoxCollider>(bridgeMesh);
+
+            // 4. Tiang Tuas Interaktif di samping dermaga rahasia
+            GameObject leverObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            leverObj.name = "Tuas_Jembatan_Rahasia";
+            leverObj.transform.SetParent(entranceRoot.transform, false);
+            leverObj.transform.localPosition = new Vector3(1.65f, 2.25f, 2.6f);
+            leverObj.transform.localScale = new Vector3(0.45f, 1.5f, 0.45f);
+
+            BoxCollider triggerCol = leverObj.GetComponent<BoxCollider>();
+            triggerCol.isTrigger = true;
+            triggerCol.size = new Vector3(3.8f, 2.2f, 3.8f);
+
+            ShortcutBridge shortcut = leverObj.AddComponent<ShortcutBridge>();
+            SerializedObject sso = new SerializedObject(shortcut);
+            sso.FindProperty("bridgePivot").objectReferenceValue = bridgePivot.transform;
+            sso.FindProperty("bridgeWalkCollider").objectReferenceValue = walkCol;
+            sso.FindProperty("promptText").stringValue = "Tarik Tuas Jembatan Pulau Rahasia";
+            sso.FindProperty("unlockBannerMessage").stringValue = "NEW SECRET LOCATION UNLOCKED";
+            sso.ApplyModifiedPropertiesWithoutUndo();
+
+            // Kunang-kunang penunjuk lembut di sekitar Perahu Karam & Tuas
             GameObject kunangPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                 "Assets/_Project/Prefabs/Props/PF_Kunang.prefab");
-            Material litMat = AssetDatabase.LoadAssetAtPath<Material>(
-                "Assets/_Project/Scenes/Zone_Mangrove/Materials/MAT_ZM_SwampStoneLit.mat")
-                ?? AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Prefabs/Player/Materials/MAT_FogPlatform_Lit.mat");
-            Material mistyMat = AssetDatabase.LoadAssetAtPath<Material>(
-                "Assets/_Project/Scenes/Zone_Mangrove/Materials/MAT_ZM_SwampMisty.mat")
-                ?? AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Prefabs/Player/Materials/MAT_FogPlatform_Dim.mat");
-            Material rootMat = AssetDatabase.LoadAssetAtPath<Material>(
-                "Assets/_Project/Scenes/Zone_Mangrove/Materials/MAT_ZM_MangroveRoot.mat");
-
-            Vector3[] stoneOffsets =
+            if (kunangPrefab != null)
             {
-                new Vector3( 0.3f, 1.45f,  0.2f),
-                new Vector3(-0.5f, 1.05f,  3.3f),
-                new Vector3( 0.6f, 0.80f,  6.5f),
-                new Vector3(-0.7f, 0.75f,  9.8f),  // FogRevealable
-                new Vector3( 0.8f, 0.75f, 13.1f),  // FogRevealable
-                new Vector3(-0.6f, 0.80f, 16.4f),  // FogRevealable
-                new Vector3( 0.7f, 0.85f, 19.7f),  // FogRevealable
-                new Vector3(-0.5f, 0.95f, 23.0f),  // FogRevealable
-                new Vector3( 0.6f, 1.10f, 26.3f),
-                new Vector3(-0.4f, 1.30f, 29.6f),
-                new Vector3( 0.3f, 1.60f, 32.9f),
-                new Vector3( 0.0f, 1.95f, 36.1f),
-            };
+                GameObject k1 = (GameObject)PrefabUtility.InstantiatePrefab(kunangPrefab, entranceRoot.transform);
+                k1.name = "Kunang_Petunjuk_Tuas";
+                k1.transform.localPosition = new Vector3(1.65f, 3.1f, 2.6f);
 
-            for (int i = 0; i < stoneOffsets.Length; i++)
-            {
-                GameObject stone = stonePrefab != null
-                    ? (GameObject)PrefabUtility.InstantiatePrefab(stonePrefab, cluesRoot.transform)
-                    : GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-
-                stone.name = $"JejakBatu_{i + 1:00}";
-                stone.transform.localPosition = stoneOffsets[i];
-                stone.transform.localRotation = Quaternion.Euler(0f, i * 37f, 0f);
-                stone.transform.localScale = new Vector3(1.55f, 1f, 1.55f);
-
-                Collider col = EnsureCollider<BoxCollider>(stone);
-                Renderer rend = stone.GetComponentInChildren<Renderer>();
-
-                // Tambah pondasi batu karang laut agar tapak batu tertanam kokoh di air (tidak melayang!)
-                GameObject reefBase = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                reefBase.name = "Grounded_ReefBase";
-                reefBase.transform.SetParent(stone.transform, false);
-                reefBase.transform.position = new Vector3(stone.transform.position.x, -0.45f, stone.transform.position.z);
-                reefBase.transform.localScale = new Vector3(0.65f, 0.85f, 0.65f);
-                Object.DestroyImmediate(reefBase.GetComponent<Collider>());
-                if (rootMat != null) reefBase.GetComponent<MeshRenderer>().sharedMaterial = rootMat;
-
-                if (i >= 3 && i <= 7)
-                {
-                    stone.name += "_Kabut";
-                    FogRevealable reveal = stone.AddComponent<FogRevealable>();
-                    SerializedObject so = new SerializedObject(reveal);
-                    so.FindProperty("targetCollider").objectReferenceValue = col;
-                    so.FindProperty("targetRenderer").objectReferenceValue = rend;
-                    so.FindProperty("revealedMaterial").objectReferenceValue = litMat;
-                    so.FindProperty("shadowMaterial").objectReferenceValue = mistyMat;
-                    so.FindProperty("extraRevealMargin").floatValue = 1.5f;
-                    so.FindProperty("keepColliderAlwaysEnabled").boolValue = true;
-                    so.ApplyModifiedPropertiesWithoutUndo();
-                }
-
-                // Kunang-kunang redup sebagai petunjuk alami di tengah kabut
-                if (kunangPrefab != null && (i == 1 || i == 5 || i == 9))
-                {
-                    GameObject kunang = (GameObject)PrefabUtility.InstantiatePrefab(kunangPrefab, cluesRoot.transform);
-                    kunang.name = $"Kunang_Petunjuk_{i + 1:00}";
-                    kunang.transform.localPosition = stoneOffsets[i] + new Vector3(0f, 1.15f, 0f);
-                }
+                GameObject k2 = (GameObject)PrefabUtility.InstantiatePrefab(kunangPrefab, entranceRoot.transform);
+                k2.name = "Kunang_Petunjuk_UjungPulau";
+                k2.transform.localPosition = new Vector3(0f, 2.8f, 45.5f);
             }
         }
 
@@ -161,67 +160,132 @@ namespace PulauKabut.Core.Editor
         {
             GameObject islandRoot = new GameObject("02_Pulau_Rahasia");
             islandRoot.transform.SetParent(parent, false);
-            // Berada ~48m di luar pantai barat Desa Pelita sehingga benar-benar tertutup kabut dari map utama
-            islandRoot.transform.localPosition = new Vector3(0f, 0f, 48.0f);
+            // Berada ~62m di barat Desa Pelita, terhubung oleh jembatan tarik sepanjang ~44m
+            islandRoot.transform.localPosition = new Vector3(-4f, 0f, 62.0f);
 
-            // Daratan utama Pulau Rahasia (diperbesar agar luas ~20m x 19m dan berada di atas permukaan air)
+            // 1. Daratan Utama Luas (~35m x 32m)
             GameObject islandPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                 "Assets/_Project/Art/Models/Environment/SM_CozyIsland_Large.fbx");
             if (islandPrefab != null)
             {
                 GameObject islandMesh = (GameObject)PrefabUtility.InstantiatePrefab(islandPrefab, islandRoot.transform);
                 islandMesh.name = "PulauRahasia_DaratanUtama";
-                islandMesh.transform.localPosition = new Vector3(0f, 2.2f, 0f);
-                islandMesh.transform.localScale = new Vector3(9.5f, 3.2f, 9.5f);
+                islandMesh.transform.localPosition = new Vector3(0f, 3.0f, 0f);
+                islandMesh.transform.localScale = new Vector3(16.5f, 4.0f, 16.5f);
                 EnsureCollider<MeshCollider>(islandMesh);
             }
 
-            // Dataran tinggi kedua di bagian belakang pulau agar eksplorasi bertingkat
+            // 2. Teras Tengah (diperluas untuk area Gapura Batu & Pondok)
             GameObject smallIslandPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                 "Assets/_Project/Art/Models/Environment/SM_CozyIsland_Small.fbx");
             if (smallIslandPrefab != null)
             {
-                GameObject upperTerrace = (GameObject)PrefabUtility.InstantiatePrefab(smallIslandPrefab, islandRoot.transform);
-                upperTerrace.name = "PulauRahasia_TerasAtas";
-                upperTerrace.transform.localPosition = new Vector3(-2.5f, 3.6f, 6.5f);
-                upperTerrace.transform.localScale = new Vector3(6.2f, 2.6f, 6.2f);
-                EnsureCollider<MeshCollider>(upperTerrace);
+                GameObject midTerrace = (GameObject)PrefabUtility.InstantiatePrefab(smallIslandPrefab, islandRoot.transform);
+                midTerrace.name = "PulauRahasia_TerasTengah";
+                midTerrace.transform.localPosition = new Vector3(-2.5f, 4.8f, 6.8f);
+                midTerrace.transform.localScale = new Vector3(10.2f, 3.0f, 10.2f);
+                EnsureCollider<MeshCollider>(midTerrace);
+
+                // 3. Puncak Rahasia tempat Menara Pelita Kuno & Serpihan Ingatan
+                GameObject peakTerrace = (GameObject)PrefabUtility.InstantiatePrefab(smallIslandPrefab, islandRoot.transform);
+                peakTerrace.name = "PulauRahasia_Puncak";
+                peakTerrace.transform.localPosition = new Vector3(-4.5f, 6.7f, 13.5f);
+                peakTerrace.transform.localScale = new Vector3(6.6f, 2.6f, 6.6f);
+                EnsureCollider<MeshCollider>(peakTerrace);
             }
 
-            // Rimbunan pohon & batu mengelilingi sisi luar agar pulau terasa tersembunyi & rimbun
+            // Landmark Keren: Gapura Batu Kuno berdiri kokoh di atas Teras Tengah tepat di ujung tangga
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyStoneArch.fbx", islandRoot.transform,
+                "Gapura_PulauRahasia", new Vector3(-2.0f, 3.75f, 0.2f), new Vector3(0f, -8f, 0f), Vector3.one * 1.15f, true);
+
+            // Pondok Penjelajah Tua di sisi kanan daratan utama
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_VillageHut_DesaPelita.fbx", islandRoot.transform,
+                "Pondok_Penjelajah_Rahasia", new Vector3(8.5f, 2.3f, -2.5f), new Vector3(0f, -125f, 0f), Vector3.one * 0.95f, true);
+
+            // Menara Pelita Kuno (miniatur) di Puncak Pulau sebagai landmark misterius
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_AltarTower_Pelita.fbx", islandRoot.transform,
+                "Menara_Rahasia", new Vector3(-5.2f, 6.0f, 15.8f), new Vector3(0f, 20f, 0f), Vector3.one * 0.62f, true);
+
+            // Tangga batu lebar berundak (4 anak tangga) menuju Teras Tengah melewati Gapura
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozySteppingStone.fbx", islandRoot.transform,
+                "Tangga_Teras_01", new Vector3(-1.5f, 2.05f, -6.2f), new Vector3(0f, 10f, 0f), new Vector3(2.1f, 1.4f, 2.1f), true);
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozySteppingStone.fbx", islandRoot.transform,
+                "Tangga_Teras_02", new Vector3(-1.6f, 2.55f, -4.6f), new Vector3(0f, 35f, 0f), new Vector3(2.1f, 1.4f, 2.1f), true);
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozySteppingStone.fbx", islandRoot.transform,
+                "Tangga_Teras_03", new Vector3(-1.7f, 3.05f, -3.0f), new Vector3(0f, 65f, 0f), new Vector3(2.1f, 1.4f, 2.1f), true);
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozySteppingStone.fbx", islandRoot.transform,
+                "Tangga_Teras_04", new Vector3(-1.8f, 3.55f, -1.4f), new Vector3(0f, 20f, 0f), new Vector3(2.1f, 1.4f, 2.1f), true);
+
+            // Tangga batu lebar berundak (4 anak tangga) menuju Puncak Menara Rahasia
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozySteppingStone.fbx", islandRoot.transform,
+                "Tangga_Puncak_01", new Vector3(-3.2f, 4.10f, 5.0f), new Vector3(0f, -15f, 0f), new Vector3(2.0f, 1.4f, 2.0f), true);
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozySteppingStone.fbx", islandRoot.transform,
+                "Tangga_Puncak_02", new Vector3(-3.5f, 4.65f, 6.4f), new Vector3(0f, 25f, 0f), new Vector3(2.0f, 1.4f, 2.0f), true);
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozySteppingStone.fbx", islandRoot.transform,
+                "Tangga_Puncak_03", new Vector3(-3.8f, 5.20f, 7.8f), new Vector3(0f, 55f, 0f), new Vector3(2.0f, 1.4f, 2.0f), true);
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozySteppingStone.fbx", islandRoot.transform,
+                "Tangga_Puncak_04", new Vector3(-4.1f, 5.75f, 9.2f), new Vector3(0f, 15f, 0f), new Vector3(2.0f, 1.4f, 2.0f), true);
+
+            // Hutan Cemara & Karang Besar mengelilingi pulau agar rimbun, megah, & terasa tersembunyi
             InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyPineTree.fbx", islandRoot.transform,
-                "Pohon_Rahasia_01", new Vector3(-9.5f, 0.7f, 2.5f), new Vector3(0f, 25f, 0f), Vector3.one * 1.35f, false);
+                "Pohon_Rahasia_01", new Vector3(-12.5f, 2.1f, -3.5f), new Vector3(0f, 25f, 0f), Vector3.one * 1.6f, false);
             InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyPineTree.fbx", islandRoot.transform,
-                "Pohon_Rahasia_02", new Vector3(9.2f, 0.7f, 4.8f), new Vector3(0f, 140f, 0f), Vector3.one * 1.25f, false);
+                "Pohon_Rahasia_02", new Vector3(-13.8f, 2.1f, 4.2f), new Vector3(0f, 85f, 0f), Vector3.one * 1.45f, false);
             InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyPineTree.fbx", islandRoot.transform,
-                "Pohon_Rahasia_03", new Vector3(-7.8f, 0.8f, -6.5f), new Vector3(0f, 70f, 0f), Vector3.one * 1.2f, false);
+                "Pohon_Rahasia_03", new Vector3(13.2f, 2.1f, 3.8f), new Vector3(0f, 140f, 0f), Vector3.one * 1.55f, false);
             InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyPineTree.fbx", islandRoot.transform,
-                "Pohon_Rahasia_04", new Vector3(6.8f, 0.7f, -7.2f), new Vector3(0f, 210f, 0f), Vector3.one * 1.1f, false);
+                "Pohon_Rahasia_04", new Vector3(11.4f, 2.1f, -9.2f), new Vector3(0f, 210f, 0f), Vector3.one * 1.35f, false);
             InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyPineTree.fbx", islandRoot.transform,
-                "Pohon_Rahasia_05", new Vector3(-6.2f, 2.7f, 11.2f), new Vector3(0f, 45f, 0f), Vector3.one * 1.3f, false);
+                "Pohon_Rahasia_05", new Vector3(-9.8f, 2.1f, -11.5f), new Vector3(0f, 70f, 0f), Vector3.one * 1.4f, false);
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyPineTree.fbx", islandRoot.transform,
+                "Pohon_Rahasia_06", new Vector3(-9.2f, 4.0f, 9.8f), new Vector3(0f, 45f, 0f), Vector3.one * 1.5f, false);
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyPineTree.fbx", islandRoot.transform,
+                "Pohon_Rahasia_07", new Vector3(4.5f, 4.0f, 10.2f), new Vector3(0f, 175f, 0f), Vector3.one * 1.3f, false);
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyPineTree.fbx", islandRoot.transform,
+                "Pohon_Rahasia_08", new Vector3(-9.5f, 5.9f, 16.5f), new Vector3(0f, 35f, 0f), Vector3.one * 1.45f, false);
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyPineTree.fbx", islandRoot.transform,
+                "Pohon_Rahasia_09", new Vector3(0.5f, 5.9f, 17.2f), new Vector3(0f, 120f, 0f), Vector3.one * 1.35f, false);
+
             InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyRock_01.fbx", islandRoot.transform,
-                "Batu_Rahasia_01", new Vector3(8.5f, 0.6f, -2.5f), new Vector3(0f, 60f, 0f), Vector3.one * 1.4f, true);
+                "Batu_Rahasia_01", new Vector3(13.8f, 2.0f, -4.5f), new Vector3(0f, 60f, 0f), Vector3.one * 2.2f, true);
             InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyRock_02.fbx", islandRoot.transform,
-                "Batu_Rahasia_02", new Vector3(-8.4f, 0.6f, -1.8f), new Vector3(0f, -35f, 0f), Vector3.one * 1.35f, true);
+                "Batu_Rahasia_02", new Vector3(-13.2f, 2.0f, -7.8f), new Vector3(0f, -35f, 0f), Vector3.one * 2.3f, true);
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyRock_01.fbx", islandRoot.transform,
+                "Batu_Rahasia_03", new Vector3(-10.5f, 3.9f, 12.8f), new Vector3(0f, 150f, 0f), Vector3.one * 1.9f, true);
+
             InstantiateProp("Assets/_Project/Art/Models/Environment/SM_RedMushroomCluster.fbx", islandRoot.transform,
-                "Jamur_Rahasia_01", new Vector3(4.4f, 0.75f, 1.8f), Vector3.zero, Vector3.one * 1.2f, false);
+                "Jamur_Rahasia_01", new Vector3(4.8f, 2.3f, -6.2f), Vector3.zero, Vector3.one * 1.35f, false);
             InstantiateProp("Assets/_Project/Art/Models/Environment/SM_RedMushroomCluster.fbx", islandRoot.transform,
-                "Jamur_Rahasia_02", new Vector3(-4.2f, 2.75f, 7.2f), new Vector3(0f, 85f, 0f), Vector3.one * 1.1f, false);
+                "Jamur_Rahasia_02", new Vector3(-5.8f, 4.1f, 5.2f), new Vector3(0f, 85f, 0f), Vector3.one * 1.25f, false);
             InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyBush.fbx", islandRoot.transform,
-                "Semak_Rahasia_01", new Vector3(3.2f, 0.7f, -4.8f), Vector3.zero, Vector3.one * 1.3f, false);
+                "Semak_Rahasia_01", new Vector3(5.2f, 2.25f, 2.4f), Vector3.zero, Vector3.one * 1.45f, false);
+            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozyBush.fbx", islandRoot.transform,
+                "Semak_Rahasia_02", new Vector3(-6.2f, 2.25f, -3.4f), new Vector3(0f, 50f, 0f), Vector3.one * 1.4f, false);
 
-            // Tangga batu alami menuju Teras Atas
-            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozySteppingStone.fbx", islandRoot.transform,
-                "Tangga_Teras_01", new Vector3(0.4f, 1.25f, 3.8f), Vector3.zero, new Vector3(1.5f, 1f, 1.5f), true);
-            InstantiateProp("Assets/_Project/Art/Models/Environment/SM_CozySteppingStone.fbx", islandRoot.transform,
-                "Tangga_Teras_02", new Vector3(-1.2f, 1.95f, 5.4f), new Vector3(0f, 30f, 0f), new Vector3(1.5f, 1f, 1.5f), true);
+            // Kunang-kunang di sekitar Menara & Gapura Rahasia
+            GameObject kunangPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Props/PF_Kunang.prefab");
+            if (kunangPrefab != null)
+            {
+                Vector3[] kunangSpots =
+                {
+                    new Vector3(-1.2f, 4.2f, 1.5f),
+                    new Vector3(6.2f, 3.6f, -1.8f),
+                    new Vector3(-4.5f, 7.6f, 13.8f)
+                };
+                for (int k = 0; k < kunangSpots.Length; k++)
+                {
+                    GameObject kunang = (GameObject)PrefabUtility.InstantiatePrefab(kunangPrefab, islandRoot.transform);
+                    kunang.name = $"Kunang_PulauRahasia_{k + 1:00}";
+                    kunang.transform.localPosition = kunangSpots[k];
+                }
+            }
 
-            // Tungku Pelita isi ulang energi lentera di Pulau Rahasia
+            // Tungku Pelita isi ulang energi lentera di depan Gapura Pulau Rahasia
             GameObject brazierObj = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             brazierObj.name = "Pelita_PulauRahasia";
             brazierObj.transform.SetParent(islandRoot.transform, false);
-            brazierObj.transform.localPosition = new Vector3(-4.5f, 1.3f, -2.5f);
-            brazierObj.transform.localScale = new Vector3(0.8f, 0.6f, 0.8f);
+            brazierObj.transform.localPosition = new Vector3(3.4f, 2.75f, -2.5f);
+            brazierObj.transform.localScale = new Vector3(0.85f, 0.65f, 0.85f);
 
             GameObject flameObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             flameObj.name = "Api_Pelita";
@@ -233,7 +297,7 @@ namespace PulauKabut.Core.Editor
             Light brazierLight = flameObj.AddComponent<Light>();
             brazierLight.type = LightType.Point;
             brazierLight.color = new Color(1f, 0.78f, 0.38f);
-            brazierLight.range = 12f;
+            brazierLight.range = 14f;
             brazierLight.intensity = 4.5f;
 
             LanternBrazier brazier = brazierObj.AddComponent<LanternBrazier>();
@@ -245,14 +309,14 @@ namespace PulauKabut.Core.Editor
             bso.FindProperty("brazierLight").objectReferenceValue = brazierLight;
             bso.ApplyModifiedPropertiesWithoutUndo();
 
-            // Hadiah Eksplorasi: Serpihan Ingatan Rahasia di Teras Atas
+            // Hadiah Eksplorasi: Serpihan Ingatan Rahasia di Puncak di depan Menara Pelita Kuno
             GameObject shardPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                 "Assets/_Project/Prefabs/Props/PF_LightShard.prefab");
             if (shardPrefab != null)
             {
                 GameObject shard = (GameObject)PrefabUtility.InstantiatePrefab(shardPrefab, islandRoot.transform);
                 shard.name = "Secret_MemoryFragment";
-                shard.transform.localPosition = new Vector3(-2.5f, 3.65f, 8.8f);
+                shard.transform.localPosition = new Vector3(-4.2f, 7.1f, 12.6f);
 
                 LightShardPickup pickup = shard.GetComponent<LightShardPickup>();
                 if (pickup != null)
@@ -264,61 +328,6 @@ namespace PulauKabut.Core.Editor
                     pso.ApplyModifiedPropertiesWithoutUndo();
                 }
             }
-        }
-
-        private static void BuildShortcutBridge(Transform parent)
-        {
-            GameObject shortcutRoot = new GameObject("03_Jembatan_Pintas");
-            shortcutRoot.transform.SetParent(parent, false);
-            // Dipasang di sisi tepi timur pulau rahasia, mengarah lurus kembali (-Z lokal = +X dunia) ke pantai barat Desa Pelita!
-            shortcutRoot.transform.localPosition = new Vector3(7.5f, 0.65f, 37.5f);
-            shortcutRoot.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
-
-            GameObject bridgePivot = new GameObject("Bridge_Pivot");
-            bridgePivot.transform.SetParent(shortcutRoot.transform, false);
-            bridgePivot.transform.localPosition = Vector3.zero;
-
-            GameObject pierPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/_Project/Art/Models/Environment/SM_CozyPier.fbx");
-            GameObject bridgeMesh;
-            if (pierPrefab != null)
-            {
-                bridgeMesh = (GameObject)PrefabUtility.InstantiatePrefab(pierPrefab, bridgePivot.transform);
-                bridgeMesh.name = "Bridge_Mesh";
-                bridgeMesh.transform.localPosition = new Vector3(0f, 0f, 16.5f);
-                bridgeMesh.transform.localScale = new Vector3(1.25f, 1f, 3.4f);
-
-                // Hitung ukuran dek jembatan penuh dari semua Renderer anak agar collider mencakup seluruh panjang jembatan
-                BoxCollider fullCol = bridgeMesh.AddComponent<BoxCollider>();
-                FitBoxColliderToChildren(bridgeMesh, fullCol);
-            }
-            else
-            {
-                bridgeMesh = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                bridgeMesh.name = "Bridge_Mesh";
-                bridgeMesh.transform.SetParent(bridgePivot.transform, false);
-                bridgeMesh.transform.localPosition = new Vector3(0f, 0f, 16.5f);
-                bridgeMesh.transform.localScale = new Vector3(2.4f, 0.3f, 33f);
-            }
-
-            Collider walkCol = EnsureCollider<BoxCollider>(bridgeMesh);
-
-            // Tiang tuas interaktif di sisi Pulau Rahasia
-            GameObject leverObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            leverObj.name = "Tuas_Jembatan_Pintas";
-            leverObj.transform.SetParent(shortcutRoot.transform, false);
-            leverObj.transform.localPosition = new Vector3(-1.5f, 0.85f, -0.6f);
-            leverObj.transform.localScale = new Vector3(0.4f, 1.4f, 0.4f);
-
-            BoxCollider triggerCol = leverObj.GetComponent<BoxCollider>();
-            triggerCol.isTrigger = true;
-            triggerCol.size = new Vector3(3.5f, 2f, 3.5f);
-
-            ShortcutBridge shortcut = leverObj.AddComponent<ShortcutBridge>();
-            SerializedObject sso = new SerializedObject(shortcut);
-            sso.FindProperty("bridgePivot").objectReferenceValue = bridgePivot.transform;
-            sso.FindProperty("bridgeWalkCollider").objectReferenceValue = walkCol;
-            sso.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static void InstantiateProp(string assetPath, Transform parent, string name,
